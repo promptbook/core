@@ -32,7 +32,7 @@ export function Notebook({
 
   return (
     <div className="notebook">
-      {notebook.cells.map((cell, index) => (
+      {notebook.cells.map((cell) => (
         <div key={cell.id} className="notebook-cell-wrapper">
           <Cell
             cell={cell}

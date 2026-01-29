@@ -27,7 +27,7 @@ export class KernelManager {
     this.status.state = 'idle';
   }
 
-  async *execute(code: string): AsyncIterable<ExecutionResult> {
+  async *execute(_code: string): AsyncIterable<ExecutionResult> {
     this.status.state = 'busy';
     this.status.executionCount++;
 

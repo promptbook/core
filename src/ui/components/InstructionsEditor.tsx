@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { StructuredInstructions, Parameter } from '../../types';
+import { StructuredInstructions } from '../../types';
 import { ParameterControls } from './ParameterControls';
 
 interface InstructionsEditorProps {

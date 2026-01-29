@@ -16,7 +16,7 @@ type TabType = 'instructions' | 'code';
 export function Cell({ cell, onUpdate, onRun, onSync }: CellProps) {
   const [activeTab, setActiveTab] = useState<TabType>('instructions');
   const [rawText, setRawText] = useState('');
-  const [isRawMode, setIsRawMode] = useState(!cell.instructions);
+  const [isRawMode] = useState(!cell.instructions);
 
   const handleTabChange = (tab: TabType) => {
     if (cell.isDirty && tab !== activeTab) {
