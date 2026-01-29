@@ -31,7 +31,13 @@
   },
   "peerDependencies": {
     "react": "^18.2.0",
-    "react-dom": "^18.2.0"
+    "react-dom": "^18.2.0",
+    "@anthropic-ai/bedrock-sdk": "^0.10.0"
+  },
+  "peerDependenciesMeta": {
+    "@anthropic-ai/bedrock-sdk": {
+      "optional": true
+    }
   },
   "devDependencies": {
     "@monaco-editor/react": "^4.6.0",
@@ -43,6 +49,7 @@
     "monaco-editor": "^0.45.0",
     "react": "^18.2.0",
     "react-dom": "^18.2.0",
-    "vitest": "^1.2.0"
+    "vitest": "^1.2.0",
+    "@anthropic-ai/bedrock-sdk": "^0.10.0"
   }
 }
