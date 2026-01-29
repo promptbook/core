@@ -1,0 +1,26 @@
+@import './notebook.css';
+@import './cell.css';
+@import './parameters.css';
+
+:root {
+  --pb-bg-primary: #ffffff;
+  --pb-bg-secondary: #f5f5f5;
+  --pb-text-primary: #1a1a1a;
+  --pb-text-secondary: #666666;
+  --pb-border-color: #e0e0e0;
+  --pb-accent-color: #0066cc;
+  --pb-success-color: #28a745;
+  --pb-error-color: #dc3545;
+  --pb-warning-color: #ffc107;
+  --pb-font-mono: 'SF Mono', 'Consolas', 'Monaco', monospace;
+  --pb-font-sans: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+  --pb-radius: 4px;
+  --pb-spacing-xs: 4px;
+  --pb-spacing-sm: 8px;
+  --pb-spacing-md: 16px;
+  --pb-spacing-lg: 24px;
+}
+
+* {
+  box-sizing: border-box;
+}

@@ -1,0 +1,62 @@
+.instructions-editor {
+  font-family: var(--pb-font-sans);
+  font-size: 15px;
+  line-height: 1.6;
+}
+
+.instructions-editor--raw textarea {
+  width: 100%;
+  min-height: 100px;
+  padding: var(--pb-spacing-sm);
+  border: 1px solid var(--pb-border-color);
+  border-radius: var(--pb-radius);
+  font-family: var(--pb-font-sans);
+  font-size: 15px;
+  resize: vertical;
+}
+
+.parameter-highlight {
+  background: linear-gradient(135deg, #e3f2fd 0%, #bbdefb 100%);
+  padding: 2px 6px;
+  border-radius: 3px;
+  cursor: pointer;
+  font-weight: 500;
+  transition: background 0.2s;
+}
+
+.parameter-highlight:hover {
+  background: linear-gradient(135deg, #bbdefb 0%, #90caf9 100%);
+}
+
+.parameter-popup {
+  position: absolute;
+  background: var(--pb-bg-primary);
+  border: 1px solid var(--pb-border-color);
+  border-radius: var(--pb-radius);
+  padding: var(--pb-spacing-md);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+  z-index: 100;
+}
+
+.parameter-controls {
+  display: flex;
+  flex-direction: column;
+  gap: var(--pb-spacing-sm);
+}
+
+.parameter-controls label {
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--pb-text-secondary);
+  text-transform: uppercase;
+}
+
+.parameter-controls input[type="text"],
+.parameter-controls input[type="number"],
+.parameter-controls input[type="date"],
+.parameter-controls select {
+  padding: var(--pb-spacing-sm);
+  border: 1px solid var(--pb-border-color);
+  border-radius: var(--pb-radius);
+  font-size: 14px;
+}

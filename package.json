@@ -20,7 +20,8 @@
     "./kernel": {
       "import": "./dist/kernel/index.js",
       "types": "./dist/kernel/index.d.ts"
-    }
+    },
+    "./styles": "./src/ui/styles/index.css"
   },
   "scripts": {
     "build": "tsc",

@@ -1,0 +1,71 @@
+.cell {
+  border: 1px solid var(--pb-border-color);
+  border-radius: var(--pb-radius);
+  background: var(--pb-bg-primary);
+}
+
+.cell--executing {
+  border-color: var(--pb-accent-color);
+}
+
+.cell-toolbar {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: var(--pb-spacing-sm) var(--pb-spacing-md);
+  border-bottom: 1px solid var(--pb-border-color);
+  background: var(--pb-bg-secondary);
+}
+
+.cell-tabs {
+  display: flex;
+  gap: var(--pb-spacing-xs);
+}
+
+.cell-tabs button {
+  padding: var(--pb-spacing-xs) var(--pb-spacing-sm);
+  border: none;
+  background: transparent;
+  cursor: pointer;
+  border-radius: var(--pb-radius);
+}
+
+.cell-tabs button[aria-selected="true"] {
+  background: var(--pb-bg-primary);
+  font-weight: 600;
+}
+
+.cell-actions {
+  display: flex;
+  gap: var(--pb-spacing-sm);
+}
+
+.cell-actions button {
+  padding: var(--pb-spacing-xs) var(--pb-spacing-md);
+  border: 1px solid var(--pb-border-color);
+  background: var(--pb-bg-primary);
+  border-radius: var(--pb-radius);
+  cursor: pointer;
+}
+
+.cell-content {
+  padding: var(--pb-spacing-md);
+  min-height: 100px;
+}
+
+.cell-output {
+  border-top: 1px solid var(--pb-border-color);
+  padding: var(--pb-spacing-md);
+  background: var(--pb-bg-secondary);
+}
+
+.output-area pre {
+  margin: 0;
+  font-family: var(--pb-font-mono);
+  font-size: 13px;
+  white-space: pre-wrap;
+}
+
+.output-item--error pre {
+  color: var(--pb-error-color);
+}

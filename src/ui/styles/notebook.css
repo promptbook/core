@@ -1,0 +1,52 @@
+.notebook {
+  max-width: 900px;
+  margin: 0 auto;
+  padding: var(--pb-spacing-lg);
+}
+
+.notebook--empty {
+  text-align: center;
+  padding: 48px;
+  color: var(--pb-text-secondary);
+}
+
+.notebook-cell-wrapper {
+  position: relative;
+  margin-bottom: var(--pb-spacing-md);
+}
+
+.notebook-cell-wrapper:hover .cell-controls {
+  opacity: 1;
+}
+
+.cell-controls {
+  position: absolute;
+  right: -40px;
+  top: 0;
+  display: flex;
+  flex-direction: column;
+  gap: var(--pb-spacing-xs);
+  opacity: 0;
+  transition: opacity 0.2s;
+}
+
+.cell-delete,
+.cell-add-below {
+  width: 24px;
+  height: 24px;
+  border: none;
+  background: var(--pb-bg-secondary);
+  border-radius: var(--pb-radius);
+  cursor: pointer;
+  font-size: 14px;
+}
+
+.cell-delete:hover {
+  background: var(--pb-error-color);
+  color: white;
+}
+
+.notebook-footer {
+  text-align: center;
+  padding: var(--pb-spacing-md);
+}
