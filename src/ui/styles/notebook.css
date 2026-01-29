@@ -1,52 +1,245 @@
+/* ============================================
+   Notebook Container
+   ============================================ */
+
 .notebook {
   max-width: 900px;
   margin: 0 auto;
-  padding: var(--pb-spacing-lg);
+  padding: var(--pb-space-8) var(--pb-space-6);
+  animation: fadeInUp var(--pb-duration-slow) var(--pb-ease-out);
 }
 
+/* ─────────────────────────────────────────
+   Empty State
+   ───────────────────────────────────────── */
+
 .notebook--empty {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  min-height: 400px;
+  padding: var(--pb-space-12) var(--pb-space-6);
   text-align: center;
-  padding: 48px;
-  color: var(--pb-text-secondary);
 }
+
+.notebook--empty-icon {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 72px;
+  height: 72px;
+  margin-bottom: var(--pb-space-6);
+  color: var(--pb-text-tertiary);
+  background: var(--pb-bg-secondary);
+  border: 2px dashed var(--pb-border-strong);
+  border-radius: var(--pb-radius-2xl);
+  animation: fadeInScale var(--pb-duration-slow) var(--pb-ease-out);
+}
+
+.notebook--empty-icon svg {
+  width: 32px;
+  height: 32px;
+  opacity: 0.6;
+}
+
+.notebook--empty h3 {
+  margin: 0 0 var(--pb-space-2);
+  font-size: var(--pb-text-xl);
+  font-weight: 600;
+  color: var(--pb-text-primary);
+}
+
+.notebook--empty p {
+  margin: 0 0 var(--pb-space-6);
+  font-size: var(--pb-text-base);
+  color: var(--pb-text-tertiary);
+  max-width: 320px;
+}
+
+.notebook--empty button {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--pb-space-2);
+  padding: var(--pb-space-3) var(--pb-space-5);
+  font-size: var(--pb-text-sm);
+  font-weight: 600;
+  color: white;
+  background: var(--pb-accent);
+  border: none;
+  border-radius: var(--pb-radius-lg);
+  box-shadow: var(--pb-shadow-md);
+  cursor: pointer;
+  transition: all var(--pb-duration-fast) var(--pb-ease);
+}
+
+.notebook--empty button:hover {
+  background: var(--pb-accent-hover);
+  box-shadow: var(--pb-shadow-lg);
+  transform: translateY(-2px);
+}
+
+.notebook--empty button:active {
+  transform: translateY(0);
+  box-shadow: var(--pb-shadow-sm);
+}
+
+.notebook--empty button svg {
+  width: 16px;
+  height: 16px;
+}
+
+/* ─────────────────────────────────────────
+   Cell Wrapper
+   ───────────────────────────────────────── */
 
 .notebook-cell-wrapper {
   position: relative;
-  margin-bottom: var(--pb-spacing-md);
+  margin-bottom: var(--pb-space-4);
+  animation: fadeInUp var(--pb-duration-slow) var(--pb-ease-out);
+  animation-fill-mode: backwards;
 }
 
-.notebook-cell-wrapper:hover .cell-controls {
-  opacity: 1;
-}
+/* Staggered entrance animations */
+.notebook-cell-wrapper:nth-child(1) { animation-delay: 0ms; }
+.notebook-cell-wrapper:nth-child(2) { animation-delay: 50ms; }
+.notebook-cell-wrapper:nth-child(3) { animation-delay: 100ms; }
+.notebook-cell-wrapper:nth-child(4) { animation-delay: 150ms; }
+.notebook-cell-wrapper:nth-child(5) { animation-delay: 200ms; }
+.notebook-cell-wrapper:nth-child(n+6) { animation-delay: 250ms; }
+
+/* ─────────────────────────────────────────
+   Cell Side Controls
+   ───────────────────────────────────────── */
 
 .cell-controls {
   position: absolute;
-  right: -40px;
-  top: 0;
+  right: -48px;
+  top: var(--pb-space-3);
   display: flex;
   flex-direction: column;
-  gap: var(--pb-spacing-xs);
+  gap: var(--pb-space-1);
   opacity: 0;
-  transition: opacity 0.2s;
+  transform: translateX(-4px);
+  transition: all var(--pb-duration-base) var(--pb-ease);
+}
+
+.notebook-cell-wrapper:hover .cell-controls,
+.notebook-cell-wrapper:focus-within .cell-controls {
+  opacity: 1;
+  transform: translateX(0);
 }
 
 .cell-delete,
 .cell-add-below {
-  width: 24px;
-  height: 24px;
-  border: none;
-  background: var(--pb-bg-secondary);
-  border-radius: var(--pb-radius);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 28px;
+  height: 28px;
+  color: var(--pb-text-tertiary);
+  background: var(--pb-bg-primary);
+  border: 1px solid var(--pb-border);
+  border-radius: var(--pb-radius-md);
   cursor: pointer;
-  font-size: 14px;
+  transition: all var(--pb-duration-fast) var(--pb-ease);
+  box-shadow: var(--pb-shadow-xs);
+}
+
+.cell-delete svg,
+.cell-add-below svg {
+  width: 14px;
+  height: 14px;
 }
 
 .cell-delete:hover {
-  background: var(--pb-error-color);
-  color: white;
+  color: var(--pb-error);
+  background: var(--pb-error-dim);
+  border-color: var(--pb-error);
 }
 
+.cell-add-below:hover {
+  color: var(--pb-accent);
+  background: var(--pb-accent-dim);
+  border-color: var(--pb-accent);
+}
+
+/* ─────────────────────────────────────────
+   Notebook Footer
+   ───────────────────────────────────────── */
+
 .notebook-footer {
-  text-align: center;
-  padding: var(--pb-spacing-md);
+  display: flex;
+  justify-content: center;
+  padding: var(--pb-space-8) 0;
+}
+
+.notebook-footer button {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--pb-space-2);
+  padding: var(--pb-space-3) var(--pb-space-5);
+  font-size: var(--pb-text-sm);
+  font-weight: 500;
+  color: var(--pb-text-tertiary);
+  background: transparent;
+  border: 2px dashed var(--pb-border-strong);
+  border-radius: var(--pb-radius-lg);
+  cursor: pointer;
+  transition: all var(--pb-duration-base) var(--pb-ease);
+}
+
+.notebook-footer button:hover {
+  color: var(--pb-accent);
+  border-color: var(--pb-accent);
+  background: var(--pb-accent-dim);
+}
+
+.notebook-footer button svg {
+  width: 16px;
+  height: 16px;
+}
+
+/* ─────────────────────────────────────────
+   Between Cell Divider (Optional)
+   ───────────────────────────────────────── */
+
+.cell-divider {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  height: 32px;
+  opacity: 0;
+  transition: opacity var(--pb-duration-fast) var(--pb-ease);
+}
+
+.notebook-cell-wrapper:hover + .cell-divider,
+.cell-divider:hover {
+  opacity: 1;
+}
+
+.cell-divider button {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 24px;
+  height: 24px;
+  color: var(--pb-text-tertiary);
+  background: var(--pb-bg-secondary);
+  border: 1px solid var(--pb-border);
+  border-radius: var(--pb-radius-full);
+  cursor: pointer;
+  transition: all var(--pb-duration-fast) var(--pb-ease);
+}
+
+.cell-divider button:hover {
+  color: var(--pb-accent);
+  background: var(--pb-accent-dim);
+  border-color: var(--pb-accent);
+  transform: scale(1.1);
+}
+
+.cell-divider button svg {
+  width: 12px;
+  height: 12px;
 }

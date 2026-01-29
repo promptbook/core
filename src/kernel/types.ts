@@ -13,7 +13,26 @@ export interface KernelInfo {
   version: string;
 }
 
-export interface KernelStatus {
-  state: 'idle' | 'busy' | 'starting' | 'dead';
+export type KernelState = 'idle' | 'busy' | 'starting' | 'dead' | 'disconnected';
+
+export interface KernelStatusInfo {
+  state: KernelState;
   executionCount: number;
+}
+
+export type EnvironmentType = 'venv' | 'conda' | 'system' | 'pyenv' | 'pipenv';
+
+export interface PythonEnvironment {
+  path: string;
+  name: string;
+  version: string;
+  type: EnvironmentType;
+  hasIpykernel: boolean;
+}
+
+export interface KernelOutput {
+  type: ExecutionResultType;
+  content: string;
+  mimeType?: string;
+  executionCount?: number;
 }

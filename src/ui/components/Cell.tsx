@@ -43,6 +43,12 @@ export function Cell({ cell, onUpdate, onRun, onSync }: CellProps) {
 
   const handleRawInput = (text: string) => {
     setRawText(text);
+    // Also update the cell's instructions so it gets marked dirty
+    onUpdate(cell.id, {
+      instructions: { text, parameters: [] },
+      lastEditedTab: 'instructions',
+      isDirty: true,
+    });
   };
 
   return (

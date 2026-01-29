@@ -1,71 +1,392 @@
+/* ============================================
+   Cell Component
+   ============================================ */
+
 .cell {
-  border: 1px solid var(--pb-border-color);
-  border-radius: var(--pb-radius);
+  position: relative;
   background: var(--pb-bg-primary);
+  border: 1px solid var(--pb-border);
+  border-radius: var(--pb-radius-xl);
+  overflow: hidden;
+  transition: all var(--pb-duration-base) var(--pb-ease);
+  box-shadow: var(--pb-shadow-sm);
 }
 
-.cell--executing {
-  border-color: var(--pb-accent-color);
+.cell:hover {
+  border-color: var(--pb-border-strong);
+  box-shadow: var(--pb-shadow-md);
 }
+
+/* ─────────────────────────────────────────
+   Executing State
+   ───────────────────────────────────────── */
+
+.cell--executing {
+  border-color: var(--pb-accent);
+  box-shadow:
+    var(--pb-shadow-md),
+    0 0 0 1px var(--pb-accent-dim);
+}
+
+.cell--executing::after {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 2px;
+  background: linear-gradient(
+    90deg,
+    transparent,
+    var(--pb-accent),
+    transparent
+  );
+  background-size: 200% 100%;
+  animation: shimmer 1.5s ease-in-out infinite;
+}
+
+@keyframes shimmer {
+  0% { background-position: 200% 0; }
+  100% { background-position: -200% 0; }
+}
+
+/* ─────────────────────────────────────────
+   Cell Toolbar
+   ───────────────────────────────────────── */
 
 .cell-toolbar {
   display: flex;
   justify-content: space-between;
   align-items: center;
-  padding: var(--pb-spacing-sm) var(--pb-spacing-md);
-  border-bottom: 1px solid var(--pb-border-color);
+  padding: var(--pb-space-2) var(--pb-space-3);
   background: var(--pb-bg-secondary);
+  border-bottom: 1px solid var(--pb-border-subtle);
 }
 
+/* Tab Switcher */
 .cell-tabs {
   display: flex;
-  gap: var(--pb-spacing-xs);
+  gap: var(--pb-space-px);
+  padding: var(--pb-space-0-5);
+  background: var(--pb-bg-inset);
+  border-radius: var(--pb-radius-md);
 }
 
 .cell-tabs button {
-  padding: var(--pb-spacing-xs) var(--pb-spacing-sm);
-  border: none;
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+  gap: var(--pb-space-1-5);
+  padding: var(--pb-space-1-5) var(--pb-space-3);
+  font-size: var(--pb-text-xs);
+  font-weight: 500;
+  color: var(--pb-text-tertiary);
   background: transparent;
+  border: none;
+  border-radius: calc(var(--pb-radius-md) - 2px);
   cursor: pointer;
-  border-radius: var(--pb-radius);
+  transition: all var(--pb-duration-fast) var(--pb-ease);
+}
+
+.cell-tabs button:hover {
+  color: var(--pb-text-secondary);
 }
 
 .cell-tabs button[aria-selected="true"] {
+  color: var(--pb-text-primary);
   background: var(--pb-bg-primary);
-  font-weight: 600;
+  box-shadow: var(--pb-shadow-xs);
 }
+
+/* Tab indicator dots */
+.cell-tabs button::before {
+  content: '';
+  display: block;
+  width: 6px;
+  height: 6px;
+  border-radius: var(--pb-radius-full);
+  opacity: 0.6;
+  transition: opacity var(--pb-duration-fast) var(--pb-ease);
+}
+
+.cell-tabs button:first-child::before {
+  background: #8b5cf6; /* Instructions - purple */
+}
+
+.cell-tabs button:last-child::before {
+  background: var(--pb-success); /* Code - green */
+}
+
+.cell-tabs button[aria-selected="true"]::before {
+  opacity: 1;
+}
+
+/* ─────────────────────────────────────────
+   Cell Actions
+   ───────────────────────────────────────── */
 
 .cell-actions {
   display: flex;
-  gap: var(--pb-spacing-sm);
+  align-items: center;
+  gap: var(--pb-space-1-5);
 }
 
 .cell-actions button {
-  padding: var(--pb-spacing-xs) var(--pb-spacing-md);
-  border: 1px solid var(--pb-border-color);
+  display: inline-flex;
+  align-items: center;
+  gap: var(--pb-space-1-5);
+  padding: var(--pb-space-1-5) var(--pb-space-2-5);
+  font-size: var(--pb-text-xs);
+  font-weight: 500;
+  color: var(--pb-text-secondary);
   background: var(--pb-bg-primary);
-  border-radius: var(--pb-radius);
+  border: 1px solid var(--pb-border);
+  border-radius: var(--pb-radius-md);
   cursor: pointer;
+  transition: all var(--pb-duration-fast) var(--pb-ease);
 }
+
+.cell-actions button svg {
+  width: 12px;
+  height: 12px;
+}
+
+.cell-actions button:hover:not(:disabled) {
+  color: var(--pb-text-primary);
+  background: var(--pb-bg-hover);
+  border-color: var(--pb-border-strong);
+}
+
+.cell-actions button:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+/* Sync button - warning style */
+.cell-actions button[aria-label="Sync"] {
+  color: var(--pb-warning);
+  background: var(--pb-warning-dim);
+  border-color: transparent;
+}
+
+.cell-actions button[aria-label="Sync"]:hover {
+  background: rgba(217, 119, 6, 0.15);
+}
+
+/* Run button - success style */
+.cell-actions button[aria-label="Run"] {
+  color: var(--pb-success);
+  background: var(--pb-success-dim);
+  border-color: transparent;
+}
+
+.cell-actions button[aria-label="Run"]:hover:not(:disabled) {
+  background: rgba(5, 150, 105, 0.15);
+}
+
+/* Running state */
+.cell-actions button:disabled[aria-label="Run"] {
+  color: var(--pb-accent);
+  background: var(--pb-accent-dim);
+  border-color: transparent;
+  opacity: 1;
+}
+
+.cell-actions button:disabled[aria-label="Run"] svg {
+  animation: spin 1s linear infinite;
+}
+
+/* ─────────────────────────────────────────
+   Cell Content
+   ───────────────────────────────────────── */
 
 .cell-content {
-  padding: var(--pb-spacing-md);
+  padding: var(--pb-space-4);
   min-height: 100px;
+  background: var(--pb-bg-primary);
 }
 
-.cell-output {
-  border-top: 1px solid var(--pb-border-color);
-  padding: var(--pb-spacing-md);
+/* Code Editor Container */
+.code-editor {
+  border-radius: var(--pb-radius-md);
+  overflow: hidden;
+  border: 1px solid var(--pb-border-subtle);
   background: var(--pb-bg-secondary);
+}
+
+/* Monaco editor overrides */
+.code-editor .monaco-editor {
+  --vscode-editor-background: var(--pb-bg-secondary) !important;
+}
+
+.code-editor .monaco-editor .margin {
+  background: var(--pb-bg-secondary) !important;
+}
+
+/* ─────────────────────────────────────────
+   Cell Output
+   ───────────────────────────────────────── */
+
+.cell-output {
+  border-top: 1px solid var(--pb-border);
+  background: var(--pb-bg-secondary);
+  animation: fadeIn var(--pb-duration-base) var(--pb-ease-out);
+}
+
+/* ─────────────────────────────────────────
+   Output Area
+   ───────────────────────────────────────── */
+
+.output-area {
+  padding: var(--pb-space-4);
 }
 
 .output-area pre {
   margin: 0;
+  padding: var(--pb-space-3);
   font-family: var(--pb-font-mono);
-  font-size: 13px;
+  font-size: var(--pb-text-sm);
+  line-height: 1.6;
+  color: var(--pb-text-secondary);
+  background: var(--pb-bg-primary);
+  border-radius: var(--pb-radius-md);
   white-space: pre-wrap;
+  word-break: break-word;
+  overflow-x: auto;
+}
+
+/* Output Item */
+.output-item {
+  position: relative;
+  margin-bottom: var(--pb-space-2);
+  padding-left: var(--pb-space-3);
+  border-left: 2px solid transparent;
+  animation: slideInRight var(--pb-duration-base) var(--pb-ease-out);
+}
+
+.output-item:last-child {
+  margin-bottom: 0;
+}
+
+/* Output type indicators */
+.output-item--result {
+  border-left-color: var(--pb-success);
+}
+
+.output-item--result pre {
+  color: var(--pb-text-primary);
+}
+
+.output-item--stdout {
+  border-left-color: var(--pb-text-tertiary);
+}
+
+.output-item--stderr {
+  border-left-color: var(--pb-warning);
+}
+
+.output-item--stderr pre {
+  color: var(--pb-warning);
+}
+
+.output-item--error {
+  border-left-color: var(--pb-error);
+  background: var(--pb-error-dim);
+  border-radius: var(--pb-radius-md);
+  padding: var(--pb-space-3);
+  padding-left: var(--pb-space-4);
 }
 
 .output-item--error pre {
-  color: var(--pb-error-color);
+  color: var(--pb-error);
+  background: transparent;
+  padding: 0;
+}
+
+/* Display output (images, rich content) */
+.output-item--display {
+  border-left-color: var(--pb-accent);
+}
+
+.output-item--display img {
+  max-width: 100%;
+  border-radius: var(--pb-radius-md);
+  box-shadow: var(--pb-shadow-sm);
+}
+
+/* HTML output (DataFrames, tables) */
+.output-item--html {
+  border-left-color: var(--pb-info);
+  padding: var(--pb-space-2);
+  overflow-x: auto;
+}
+
+.output-item--html table {
+  border-collapse: collapse;
+  font-size: var(--pb-text-sm);
+  width: 100%;
+}
+
+.output-item--html th,
+.output-item--html td {
+  padding: var(--pb-space-2) var(--pb-space-3);
+  border: 1px solid var(--pb-border);
+  text-align: left;
+}
+
+.output-item--html th {
+  background: var(--pb-bg-secondary);
+  font-weight: 600;
+  color: var(--pb-text-primary);
+}
+
+.output-item--html tr:hover td {
+  background: var(--pb-bg-hover);
+}
+
+/* JSON output */
+.output-item--json {
+  border-left-color: var(--pb-accent);
+}
+
+.output-item--json pre {
+  background: var(--pb-bg-secondary);
+  color: var(--pb-text-primary);
+}
+
+/* Image output */
+.output-item--image {
+  border-left-color: var(--pb-accent);
+  padding: var(--pb-space-2);
+}
+
+.output-item--image img {
+  max-width: 100%;
+  height: auto;
+  border-radius: var(--pb-radius-md);
+  box-shadow: var(--pb-shadow-md);
+}
+
+/* ─────────────────────────────────────────
+   Cell Execution Count
+   ───────────────────────────────────────── */
+
+.cell-execution-count {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 24px;
+  height: 20px;
+  padding: 0 var(--pb-space-1-5);
+  font-family: var(--pb-font-mono);
+  font-size: var(--pb-text-xs);
+  font-weight: 500;
+  color: var(--pb-text-tertiary);
+  background: var(--pb-bg-inset);
+  border-radius: var(--pb-radius-sm);
+}
+
+.cell-execution-count--running {
+  color: var(--pb-accent);
+  background: var(--pb-accent-dim);
 }

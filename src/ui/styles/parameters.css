@@ -1,62 +1,303 @@
+/* ============================================
+   Instructions Editor
+   ============================================ */
+
 .instructions-editor {
   font-family: var(--pb-font-sans);
-  font-size: 15px;
-  line-height: 1.6;
+  font-size: var(--pb-text-base);
+  line-height: 1.7;
+  color: var(--pb-text-primary);
 }
+
+/* ─────────────────────────────────────────
+   Raw Input Mode
+   ───────────────────────────────────────── */
 
 .instructions-editor--raw textarea {
   width: 100%;
-  min-height: 100px;
-  padding: var(--pb-spacing-sm);
-  border: 1px solid var(--pb-border-color);
-  border-radius: var(--pb-radius);
+  min-height: 120px;
+  padding: var(--pb-space-4);
   font-family: var(--pb-font-sans);
-  font-size: 15px;
+  font-size: var(--pb-text-base);
+  line-height: 1.7;
+  color: var(--pb-text-primary);
+  background: var(--pb-bg-secondary);
+  border: 1px solid var(--pb-border);
+  border-radius: var(--pb-radius-lg);
   resize: vertical;
+  transition: all var(--pb-duration-fast) var(--pb-ease);
 }
 
+.instructions-editor--raw textarea::placeholder {
+  color: var(--pb-text-tertiary);
+}
+
+.instructions-editor--raw textarea:focus {
+  outline: none;
+  border-color: var(--pb-accent);
+  box-shadow: var(--pb-shadow-focus);
+}
+
+/* ─────────────────────────────────────────
+   Instructions Text
+   ───────────────────────────────────────── */
+
+.instructions-text {
+  padding: var(--pb-space-2) 0;
+}
+
+/* ─────────────────────────────────────────
+   Parameter Highlight Pills
+   ───────────────────────────────────────── */
+
 .parameter-highlight {
-  background: linear-gradient(135deg, #e3f2fd 0%, #bbdefb 100%);
-  padding: 2px 6px;
-  border-radius: 3px;
-  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  gap: var(--pb-space-1);
+  padding: var(--pb-space-0-5) var(--pb-space-2-5);
+  margin: 0 var(--pb-space-0-5);
+  font-family: var(--pb-font-mono);
+  font-size: var(--pb-text-sm);
   font-weight: 500;
-  transition: background 0.2s;
+  color: var(--pb-accent);
+  background: var(--pb-accent-dim);
+  border: 1px solid transparent;
+  border-radius: var(--pb-radius-full);
+  cursor: pointer;
+  transition: all var(--pb-duration-fast) var(--pb-ease);
+  vertical-align: baseline;
 }
 
 .parameter-highlight:hover {
-  background: linear-gradient(135deg, #bbdefb 0%, #90caf9 100%);
+  background: var(--pb-accent-subtle);
+  border-color: var(--pb-accent);
+  transform: translateY(-1px);
 }
+
+.parameter-highlight:active {
+  transform: translateY(0);
+}
+
+/* Parameter type indicators */
+.parameter-highlight::before {
+  content: '';
+  display: block;
+  width: 6px;
+  height: 6px;
+  border-radius: var(--pb-radius-full);
+  flex-shrink: 0;
+}
+
+.parameter-highlight[data-type="number"]::before {
+  background: #ec4899; /* Pink */
+}
+
+.parameter-highlight[data-type="string"]::before {
+  background: var(--pb-accent);
+}
+
+.parameter-highlight[data-type="date"]::before {
+  background: var(--pb-warning);
+}
+
+.parameter-highlight[data-type="boolean"]::before {
+  background: #8b5cf6; /* Purple */
+}
+
+.parameter-highlight[data-type="column"]::before {
+  background: var(--pb-success);
+}
+
+/* ─────────────────────────────────────────
+   Parameter Popup / Modal
+   ───────────────────────────────────────── */
 
 .parameter-popup {
   position: absolute;
+  z-index: 1000;
+  min-width: 280px;
+  padding: var(--pb-space-5);
   background: var(--pb-bg-primary);
-  border: 1px solid var(--pb-border-color);
-  border-radius: var(--pb-radius);
-  padding: var(--pb-spacing-md);
-  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
-  z-index: 100;
+  border: 1px solid var(--pb-border);
+  border-radius: var(--pb-radius-xl);
+  box-shadow: var(--pb-shadow-xl);
+  animation: fadeInScale var(--pb-duration-base) var(--pb-ease-out);
 }
+
+/* Popup header */
+.parameter-popup-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: var(--pb-space-4);
+  padding-bottom: var(--pb-space-3);
+  border-bottom: 1px solid var(--pb-border);
+}
+
+.parameter-popup-title {
+  font-size: var(--pb-text-xs);
+  font-weight: 600;
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+  color: var(--pb-text-tertiary);
+}
+
+.parameter-popup-close {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 24px;
+  height: 24px;
+  color: var(--pb-text-tertiary);
+  background: transparent;
+  border: none;
+  border-radius: var(--pb-radius-md);
+  cursor: pointer;
+  transition: all var(--pb-duration-fast) var(--pb-ease);
+}
+
+.parameter-popup-close:hover {
+  color: var(--pb-text-primary);
+  background: var(--pb-bg-hover);
+}
+
+.parameter-popup-close svg {
+  width: 14px;
+  height: 14px;
+}
+
+/* ─────────────────────────────────────────
+   Parameter Controls
+   ───────────────────────────────────────── */
 
 .parameter-controls {
   display: flex;
   flex-direction: column;
-  gap: var(--pb-spacing-sm);
+  gap: var(--pb-space-4);
 }
 
 .parameter-controls label {
-  font-size: 12px;
+  display: block;
+  margin-bottom: var(--pb-space-1-5);
+  font-size: var(--pb-text-xs);
   font-weight: 600;
-  color: var(--pb-text-secondary);
+  letter-spacing: 0.03em;
   text-transform: uppercase;
+  color: var(--pb-text-secondary);
 }
 
+/* Input fields */
 .parameter-controls input[type="text"],
 .parameter-controls input[type="number"],
 .parameter-controls input[type="date"],
 .parameter-controls select {
-  padding: var(--pb-spacing-sm);
-  border: 1px solid var(--pb-border-color);
-  border-radius: var(--pb-radius);
-  font-size: 14px;
+  width: 100%;
+  padding: var(--pb-space-2-5) var(--pb-space-3);
+  font-family: var(--pb-font-mono);
+  font-size: var(--pb-text-sm);
+  color: var(--pb-text-primary);
+  background: var(--pb-bg-secondary);
+  border: 1px solid var(--pb-border);
+  border-radius: var(--pb-radius-md);
+  transition: all var(--pb-duration-fast) var(--pb-ease);
+}
+
+.parameter-controls input:focus,
+.parameter-controls select:focus {
+  outline: none;
+  border-color: var(--pb-accent);
+  box-shadow: var(--pb-shadow-focus);
+}
+
+.parameter-controls input::placeholder {
+  color: var(--pb-text-tertiary);
+}
+
+/* Select dropdown */
+.parameter-controls select {
+  appearance: none;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 12 12'%3E%3Cpath fill='%2378716c' d='M3 4.5L6 8l3-3.5H3z'/%3E%3C/svg%3E");
+  background-repeat: no-repeat;
+  background-position: right 12px center;
+  padding-right: 36px;
+  cursor: pointer;
+}
+
+.parameter-controls select:hover {
+  border-color: var(--pb-border-strong);
+}
+
+/* Checkbox */
+.parameter-controls input[type="checkbox"] {
+  width: 18px;
+  height: 18px;
+  margin: 0;
+  accent-color: var(--pb-accent);
+  cursor: pointer;
+  border-radius: var(--pb-radius-sm);
+}
+
+/* Done button */
+.parameter-popup button[type="submit"],
+.parameter-popup-submit {
+  width: 100%;
+  margin-top: var(--pb-space-4);
+  padding: var(--pb-space-2-5) var(--pb-space-4);
+  font-size: var(--pb-text-sm);
+  font-weight: 600;
+  color: white;
+  background: var(--pb-accent);
+  border: none;
+  border-radius: var(--pb-radius-md);
+  cursor: pointer;
+  transition: all var(--pb-duration-fast) var(--pb-ease);
+}
+
+.parameter-popup button[type="submit"]:hover,
+.parameter-popup-submit:hover {
+  background: var(--pb-accent-hover);
+  transform: translateY(-1px);
+  box-shadow: var(--pb-shadow-md);
+}
+
+.parameter-popup button[type="submit"]:active,
+.parameter-popup-submit:active {
+  transform: translateY(0);
+}
+
+/* ─────────────────────────────────────────
+   Parameter Type Badge
+   ───────────────────────────────────────── */
+
+.parameter-type-badge {
+  display: inline-flex;
+  align-items: center;
+  padding: var(--pb-space-0-5) var(--pb-space-2);
+  font-size: var(--pb-text-xs);
+  font-weight: 500;
+  color: var(--pb-text-tertiary);
+  background: var(--pb-bg-secondary);
+  border-radius: var(--pb-radius-full);
+}
+
+/* ─────────────────────────────────────────
+   Parameter Field Group
+   ───────────────────────────────────────── */
+
+.parameter-field {
+  display: flex;
+  flex-direction: column;
+  gap: var(--pb-space-1-5);
+}
+
+.parameter-field-label {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.parameter-field-hint {
+  font-size: var(--pb-text-xs);
+  color: var(--pb-text-tertiary);
+  margin-top: var(--pb-space-1);
 }

@@ -1,4 +1,4 @@
-import { CellState } from './cell';
+import { CellState, createEmptyCell } from './cell';
 
 export interface NotebookMetadata {
   kernel: string;
@@ -15,6 +15,7 @@ export interface NotebookState {
 }
 
 export function createEmptyNotebook(): NotebookState {
+  const firstCell = createEmptyCell('cell-1');
   return {
     version: '1.0',
     metadata: {
@@ -23,7 +24,7 @@ export function createEmptyNotebook(): NotebookState {
       created: new Date().toISOString(),
       modified: new Date().toISOString(),
     },
-    cells: [],
-    activeCellId: null,
+    cells: [firstCell],
+    activeCellId: firstCell.id,
   };
 }

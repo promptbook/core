@@ -1,8 +1,8 @@
 // packages/core/src/kernel/KernelManager.ts
-import { ExecutionResult, KernelInfo, KernelStatus } from './types';
+import { ExecutionResult, KernelInfo, KernelStatusInfo } from './types';
 
 export class KernelManager {
-  private status: KernelStatus = {
+  private status: KernelStatusInfo = {
     state: 'idle',
     executionCount: 0,
   };
@@ -13,7 +13,7 @@ export class KernelManager {
     version: '3.x',
   };
 
-  getStatus(): KernelStatus {
+  getStatus(): KernelStatusInfo {
     return { ...this.status };
   }
 
