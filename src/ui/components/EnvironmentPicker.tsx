@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { PythonEnvironment } from '../../kernel/types';
+import { PythonEnvironment } from '../../kernel/PythonSetup';
 
 interface EnvironmentPickerProps {
   isOpen: boolean;

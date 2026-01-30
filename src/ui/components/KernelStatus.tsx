@@ -1,5 +1,6 @@
 import React from 'react';
-import { KernelState, PythonEnvironment } from '../../kernel/types';
+import { KernelState } from '../../kernel/KernelManager';
+import { PythonEnvironment } from '../../kernel/PythonSetup';
 
 interface KernelStatusProps {
   status: KernelState;

@@ -32,10 +32,14 @@
   "peerDependencies": {
     "react": "^18.2.0",
     "react-dom": "^18.2.0",
-    "@anthropic-ai/claude-agent-sdk": "^0.2.0"
+    "@anthropic-ai/claude-agent-sdk": "^0.2.0",
+    "zeromq": "^6.0.0"
   },
   "peerDependenciesMeta": {
     "@anthropic-ai/claude-agent-sdk": {
+      "optional": true
+    },
+    "zeromq": {
       "optional": true
     }
   },
@@ -50,6 +54,7 @@
     "react": "^18.2.0",
     "react-dom": "^18.2.0",
     "vitest": "^1.2.0",
-    "@anthropic-ai/claude-agent-sdk": "^0.2.0"
+    "@anthropic-ai/claude-agent-sdk": "^0.2.0",
+    "zeromq": "^6.0.0"
   }
 }
