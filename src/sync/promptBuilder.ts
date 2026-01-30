@@ -1,10 +1,51 @@
 // packages/core/src/sync/promptBuilder.ts
 // Shared AI sync prompt building logic
 
+/** Context from a single cell in the notebook */
+export interface CellContext {
+  shortDescription: string;
+  code: string;
+}
+
 export interface AiSyncContext {
   newContent: string;
   previousContent?: string;
   existingCounterpart?: string;
+  /** Cells that come BEFORE the current cell (in execution order) */
+  cellsBefore?: CellContext[];
+  /** Cells that come AFTER the current cell (in execution order) */
+  cellsAfter?: CellContext[];
+}
+
+/**
+ * Format surrounding cells as context for the prompt
+ */
+function formatCellsContext(cellsBefore?: CellContext[], cellsAfter?: CellContext[]): string {
+  const parts: string[] = [];
+
+  if (cellsBefore && cellsBefore.length > 0) {
+    parts.push('CODE FROM EARLIER CELLS (executed before this cell):');
+    cellsBefore.forEach((cell, i) => {
+      parts.push(`--- Cell ${i + 1}: ${cell.shortDescription || 'No description'} ---`);
+      parts.push('```python');
+      parts.push(cell.code || '# (empty)');
+      parts.push('```');
+    });
+    parts.push('');
+  }
+
+  if (cellsAfter && cellsAfter.length > 0) {
+    parts.push('CODE FROM LATER CELLS (executed after this cell):');
+    cellsAfter.forEach((cell, i) => {
+      parts.push(`--- Cell ${i + 1}: ${cell.shortDescription || 'No description'} ---`);
+      parts.push('```python');
+      parts.push(cell.code || '# (empty)');
+      parts.push('```');
+    });
+    parts.push('');
+  }
+
+  return parts.length > 0 ? parts.join('\n') : '';
 }
 
 export type SyncDirection =
@@ -24,7 +65,8 @@ export type SyncDirection =
  * Used by both Electron and VS Code extension.
  */
 export function buildSyncPrompt(direction: string, context: AiSyncContext): string {
-  const { newContent, previousContent, existingCounterpart } = context;
+  const { newContent, previousContent, existingCounterpart, cellsBefore, cellsAfter } = context;
+  const cellsContext = formatCellsContext(cellsBefore, cellsAfter);
 
   // Handle expand/shorten instructions
   if (direction === 'expandInstructions') {
@@ -98,10 +140,17 @@ Return ONLY the shortened description, no code or markdown.`;
   const hasChanges = previousContent && previousContent !== newContent;
 
   if (isToCode) {
+    const notebookContext = cellsContext ? `
+NOTEBOOK CONTEXT (this cell is part of a larger notebook):
+${cellsContext}
+IMPORTANT: The code in this cell will be executed AFTER the earlier cells above. You can use any variables, functions, or imports defined in earlier cells. Don't re-import or redefine things that are already available.
+
+` : '';
+
     if (hasExistingCode && hasChanges) {
       // Incremental update: instructions changed, update existing code
       return `You are updating Python code based on changed instructions.
-
+${notebookContext}
 PREVIOUS INSTRUCTIONS:
 ${previousContent}
 
@@ -119,7 +168,7 @@ Return ONLY the updated Python code, no explanations or markdown.`;
     } else if (hasExistingCode) {
       // Existing code but no tracked changes - still use it as reference
       return `You are generating Python code for a task. There is existing code that may be relevant.
-
+${notebookContext}
 INSTRUCTIONS:
 ${newContent}
 
@@ -134,7 +183,7 @@ Return ONLY the Python code, no explanations or markdown.`;
     } else {
       // Fresh generation
       return `Generate Python code for the following task. Write clean, efficient, and well-structured code.
-
+${notebookContext}
 Return ONLY the Python code, no explanations or markdown.
 
 TASK:
