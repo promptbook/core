@@ -24,23 +24,35 @@ function formatCellsContext(cellsBefore?: CellContext[], cellsAfter?: CellContex
   const parts: string[] = [];
 
   if (cellsBefore && cellsBefore.length > 0) {
-    parts.push('CODE FROM EARLIER CELLS (executed before this cell):');
+    parts.push('EARLIER CELLS (executed before this cell - you MUST reuse their variables):');
     cellsBefore.forEach((cell, i) => {
-      parts.push(`--- Cell ${i + 1}: ${cell.shortDescription || 'No description'} ---`);
-      parts.push('```python');
-      parts.push(cell.code || '# (empty)');
-      parts.push('```');
+      parts.push(`--- Cell ${i + 1} ---`);
+      if (cell.shortDescription) {
+        parts.push(`Description: ${cell.shortDescription}`);
+      }
+      if (cell.code && cell.code.trim()) {
+        parts.push('```python');
+        parts.push(cell.code);
+        parts.push('```');
+      } else if (cell.shortDescription) {
+        parts.push('(Code not yet generated, but will produce results based on description)');
+      }
     });
     parts.push('');
   }
 
   if (cellsAfter && cellsAfter.length > 0) {
-    parts.push('CODE FROM LATER CELLS (executed after this cell):');
+    parts.push('LATER CELLS (executed after this cell - may use variables you define):');
     cellsAfter.forEach((cell, i) => {
-      parts.push(`--- Cell ${i + 1}: ${cell.shortDescription || 'No description'} ---`);
-      parts.push('```python');
-      parts.push(cell.code || '# (empty)');
-      parts.push('```');
+      parts.push(`--- Cell ${i + 1} ---`);
+      if (cell.shortDescription) {
+        parts.push(`Description: ${cell.shortDescription}`);
+      }
+      if (cell.code && cell.code.trim()) {
+        parts.push('```python');
+        parts.push(cell.code);
+        parts.push('```');
+      }
     });
     parts.push('');
   }
@@ -143,7 +155,12 @@ Return ONLY the shortened description, no code or markdown.`;
     const notebookContext = cellsContext ? `
 NOTEBOOK CONTEXT (this cell is part of a larger notebook):
 ${cellsContext}
-IMPORTANT: The code in this cell will be executed AFTER the earlier cells above. You can use any variables, functions, or imports defined in earlier cells. Don't re-import or redefine things that are already available.
+CRITICAL REQUIREMENTS:
+1. This cell executes AFTER the earlier cells above. REUSE variables, functions, and imports from earlier cells.
+2. DO NOT re-import libraries that are already imported in earlier cells.
+3. DO NOT redefine functions or recompute values that already exist from earlier cells.
+4. If an earlier cell generates data (like Fibonacci numbers, a dataframe, etc.), USE that variable directly.
+5. Only add NEW code that builds on what already exists.
 
 ` : '';
 

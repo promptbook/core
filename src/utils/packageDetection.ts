@@ -3,6 +3,15 @@
 
 import { CellOutput } from '../types';
 
+/**
+ * Strip ANSI escape codes from text.
+ * IPython/ipykernel includes ANSI codes for colored traceback output.
+ */
+function stripAnsi(text: string): string {
+  // eslint-disable-next-line no-control-regex
+  return text.replace(/\x1b\[[0-9;]*m/g, '');
+}
+
 /** Information about a missing package */
 export interface MissingPackage {
   /** The import name used in code (e.g., "cv2") */
@@ -85,7 +94,8 @@ export function detectMissingPackages(outputs: CellOutput[]): PackageDetectionRe
   const errorOutput = outputs.find(o => o.type === 'error');
   if (!errorOutput) return null;
 
-  const content = errorOutput.content;
+  // Strip ANSI codes that ipykernel includes for colored output
+  const content = stripAnsi(errorOutput.content);
   const packages = new Set<string>();
 
   // Pattern 1: ModuleNotFoundError: No module named 'xxx'
