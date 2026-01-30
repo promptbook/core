@@ -16,6 +16,8 @@ export interface CellState {
   lastEditedTab: 'instructions' | 'code';
   isDirty: boolean;
   isExecuting: boolean;
+  isSyncing: boolean;
+  lastSyncedInstructions?: string; // Cache to avoid redundant AI calls
 }
 
 export function createEmptyCell(id: string): CellState {
@@ -27,5 +29,6 @@ export function createEmptyCell(id: string): CellState {
     lastEditedTab: 'instructions',
     isDirty: false,
     isExecuting: false,
+    isSyncing: false,
   };
 }

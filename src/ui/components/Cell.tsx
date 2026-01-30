@@ -52,7 +52,7 @@ export function Cell({ cell, onUpdate, onRun, onSync }: CellProps) {
   };
 
   return (
-    <div className={`cell ${cell.isExecuting ? 'cell--executing' : ''}`}>
+    <div className={`cell ${cell.isExecuting ? 'cell--executing' : ''} ${cell.isSyncing ? 'cell--syncing' : ''}`}>
       <div className="cell-toolbar">
         <div className="cell-tabs" role="tablist">
           <button
@@ -71,14 +71,20 @@ export function Cell({ cell, onUpdate, onRun, onSync }: CellProps) {
           </button>
         </div>
         <div className="cell-actions">
-          {cell.isDirty && (
+          {cell.isDirty && !cell.isSyncing && (
             <button onClick={() => onSync(cell.id)} aria-label="Sync">
               Sync
             </button>
           )}
+          {cell.isSyncing && (
+            <button disabled className="cell-syncing-btn">
+              <span className="cell-syncing-spinner" />
+              Syncing...
+            </button>
+          )}
           <button
             onClick={() => onRun(cell.id)}
-            disabled={cell.isExecuting}
+            disabled={cell.isExecuting || cell.isSyncing}
             aria-label="Run"
           >
             {cell.isExecuting ? 'Running...' : '▶ Run'}
@@ -96,11 +102,21 @@ export function Cell({ cell, onUpdate, onRun, onSync }: CellProps) {
             rawText={rawText}
           />
         ) : (
-          <CodeEditor
-            code={cell.code}
-            onChange={handleCodeChange}
-            readOnly={cell.isExecuting}
-          />
+          <div className="cell-code-wrapper">
+            {cell.isSyncing && (
+              <div className="cell-sync-overlay">
+                <div className="cell-sync-overlay__content">
+                  <span className="cell-sync-overlay__spinner" />
+                  <span>Generating code...</span>
+                </div>
+              </div>
+            )}
+            <CodeEditor
+              code={cell.code}
+              onChange={handleCodeChange}
+              readOnly={cell.isExecuting || cell.isSyncing}
+            />
+          </div>
         )}
       </div>
 
