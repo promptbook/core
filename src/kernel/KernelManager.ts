@@ -85,12 +85,24 @@ export class KernelManager extends EventEmitter {
     const tmpDir = os.tmpdir();
     this.connectionFile = path.join(tmpDir, `kernel-${Date.now()}.json`);
 
-    // Start the kernel process
+    // Get the venv's bin directory to prepend to PATH
+    // This ensures shell commands (!) use the venv's executables
+    const pythonDir = path.dirname(this.pythonPath);
+    const currentPath = process.env.PATH || '';
+    const newPath = `${pythonDir}${path.delimiter}${currentPath}`;
+
+    // Start the kernel process with venv's bin directory in PATH
     this.process = spawn(this.pythonPath, [
       '-m', 'ipykernel_launcher',
       '-f', this.connectionFile,
     ], {
       stdio: ['pipe', 'pipe', 'pipe'],
+      env: {
+        ...process.env,
+        PATH: newPath,
+        // Also set VIRTUAL_ENV for tools that check it
+        VIRTUAL_ENV: path.dirname(pythonDir),
+      },
     });
 
     this.process.on('exit', (code) => {
