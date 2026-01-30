@@ -185,6 +185,38 @@ interface TextWithParametersProps {
   placeholder: string;
 }
 
+// Render a text segment, highlighting #mentions within it
+function renderTextWithMentions(text: string, keyPrefix: string): React.ReactNode[] {
+  const parts: React.ReactNode[] = [];
+  const mentionRegex = /#([a-zA-Z_][a-zA-Z0-9_]*)/g;
+  let lastIndex = 0;
+  let match;
+
+  while ((match = mentionRegex.exec(text)) !== null) {
+    // Add text before the mention
+    if (match.index > lastIndex) {
+      parts.push(<span key={`${keyPrefix}-text-${lastIndex}`}>{text.slice(lastIndex, match.index)}</span>);
+    }
+
+    // Add the mention with styling
+    const mentionName = match[1];
+    parts.push(
+      <span key={`${keyPrefix}-mention-${match.index}`} className="symbol-mention" title={`Symbol: ${mentionName}`}>
+        #{mentionName}
+      </span>
+    );
+
+    lastIndex = match.index + match[0].length;
+  }
+
+  // Add remaining text
+  if (lastIndex < text.length) {
+    parts.push(<span key={`${keyPrefix}-text-${lastIndex}`}>{text.slice(lastIndex)}</span>);
+  }
+
+  return parts.length > 0 ? parts : [<span key={`${keyPrefix}-full`}>{text}</span>];
+}
+
 function TextWithParameters({ parsed, editingParamId, editValue, onEditValueChange, onParameterClick, onParameterSubmit, onParamKeyDown, placeholder }: TextWithParametersProps) {
   if (!parsed.displayText) {
     return <span className="description-placeholder">{placeholder}</span>;
@@ -197,7 +229,9 @@ function TextWithParameters({ parsed, editingParamId, editValue, onEditValueChan
 
   while ((match = regex.exec(parsed.displayText)) !== null) {
     if (match.index > lastIndex) {
-      parts.push(<span key={`text-${lastIndex}`}>{parsed.displayText.slice(lastIndex, match.index)}</span>);
+      // Render text segment with #mentions highlighted
+      const textSegment = parsed.displayText.slice(lastIndex, match.index);
+      parts.push(...renderTextWithMentions(textSegment, `seg-${lastIndex}`));
     }
 
     const paramId = match[1];
@@ -229,9 +263,11 @@ function TextWithParameters({ parsed, editingParamId, editValue, onEditValueChan
   }
 
   if (lastIndex < parsed.displayText.length) {
-    parts.push(<span key={`text-${lastIndex}`}>{parsed.displayText.slice(lastIndex)}</span>);
+    // Render remaining text with #mentions highlighted
+    const textSegment = parsed.displayText.slice(lastIndex);
+    parts.push(...renderTextWithMentions(textSegment, `seg-${lastIndex}`));
   }
 
-  return <>{parts.length > 0 ? parts : parsed.originalText}</>;
+  return <>{parts.length > 0 ? parts : renderTextWithMentions(parsed.originalText, 'orig')}</>;
 }
 

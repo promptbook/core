@@ -146,3 +146,20 @@
 .symbol-autocomplete-dropdown::-webkit-scrollbar-thumb:hover {
   background: var(--pb-text-tertiary);
 }
+
+/* Symbol mention styling in description text */
+.symbol-mention {
+  font-family: var(--pb-font-mono);
+  font-size: 0.95em;
+  font-weight: 500;
+  color: var(--pb-info);
+  background: color-mix(in srgb, var(--pb-info) 12%, transparent);
+  padding: 1px 5px;
+  border-radius: 4px;
+  cursor: default;
+  transition: background 0.15s ease;
+}
+
+.symbol-mention:hover {
+  background: color-mix(in srgb, var(--pb-info) 20%, transparent);
+}
