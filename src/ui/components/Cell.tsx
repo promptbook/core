@@ -1,4 +1,4 @@
-import React, { useState, useRef, useCallback } from 'react';
+import React, { useState, useRef, useCallback, useEffect } from 'react';
 import { CellState, CodeCellTab } from '../../types/cell';
 import { DescriptionEditor } from './DescriptionEditor';
 import { CodeEditor } from './CodeEditor';
@@ -79,6 +79,10 @@ export function Cell({ cell, onUpdate, onRun, onSync, isActive, onFocus }: CellP
         isExecuting={cell.isExecuting}
         onSync={() => onSync(cell.id)}
         onRun={() => onRun(cell.id)}
+        executionStartTime={cell.executionStartTime}
+        lastExecutionTime={cell.lastExecutionTime}
+        lastExecutionSuccess={cell.lastExecutionSuccess}
+        executionCount={cell.executionCount}
       />
       <CellContent
         activeTab={activeTab}
@@ -110,9 +114,13 @@ interface CellToolbarProps {
   isExecuting: boolean;
   onSync: () => void;
   onRun: () => void;
+  executionStartTime?: number;
+  lastExecutionTime?: number;
+  lastExecutionSuccess?: boolean;
+  executionCount?: number;
 }
 
-function CellToolbar({ activeTab, onTabChange, isDirty, isSyncing, isExecuting, onSync, onRun }: CellToolbarProps) {
+function CellToolbar({ activeTab, onTabChange, isDirty, isSyncing, isExecuting, onSync, onRun, executionStartTime, lastExecutionTime, lastExecutionSuccess, executionCount }: CellToolbarProps) {
   return (
     <div className="cell-toolbar">
       <div className="cell-tabs" role="tablist">
@@ -121,6 +129,7 @@ function CellToolbar({ activeTab, onTabChange, isDirty, isSyncing, isExecuting, 
         <button role="tab" aria-selected={activeTab === 'code'} onClick={() => onTabChange('code')}>Code</button>
       </div>
       <div className="cell-actions">
+        <ExecutionStatus isExecuting={isExecuting} executionStartTime={executionStartTime} lastExecutionTime={lastExecutionTime} lastExecutionSuccess={lastExecutionSuccess} executionCount={executionCount} />
         {isDirty && !isSyncing && <button onClick={onSync} aria-label="Sync">Sync</button>}
         {isSyncing && (
           <button disabled className="cell-syncing-btn">
@@ -134,6 +143,62 @@ function CellToolbar({ activeTab, onTabChange, isDirty, isSyncing, isExecuting, 
       </div>
     </div>
   );
+}
+
+// Execution status with live timer
+interface ExecutionStatusProps {
+  isExecuting: boolean;
+  executionStartTime?: number;
+  lastExecutionTime?: number;
+  lastExecutionSuccess?: boolean;
+  executionCount?: number;
+}
+
+function formatDuration(ms: number): string {
+  if (ms < 1000) return `${ms}ms`;
+  if (ms < 60000) return `${(ms / 1000).toFixed(1)}s`;
+  const mins = Math.floor(ms / 60000);
+  const secs = ((ms % 60000) / 1000).toFixed(0);
+  return `${mins}m ${secs}s`;
+}
+
+function ExecutionStatus({ isExecuting, executionStartTime, lastExecutionTime, lastExecutionSuccess, executionCount }: ExecutionStatusProps) {
+  const [elapsed, setElapsed] = useState(0);
+
+  useEffect(() => {
+    if (!isExecuting || !executionStartTime) {
+      setElapsed(0);
+      return;
+    }
+
+    const interval = setInterval(() => {
+      setElapsed(Date.now() - executionStartTime);
+    }, 100);
+
+    return () => clearInterval(interval);
+  }, [isExecuting, executionStartTime]);
+
+  if (isExecuting) {
+    return (
+      <span className="execution-status execution-status--running">
+        <span className="execution-status__spinner" />
+        <span className="execution-status__time">{formatDuration(elapsed)}</span>
+      </span>
+    );
+  }
+
+  if (lastExecutionTime !== undefined && lastExecutionSuccess !== undefined) {
+    const statusClass = lastExecutionSuccess ? 'execution-status--success' : 'execution-status--error';
+    const icon = lastExecutionSuccess ? '✓' : '✗';
+    return (
+      <span className={`execution-status ${statusClass}`} title={`Execution ${executionCount || ''}: ${formatDuration(lastExecutionTime)}`}>
+        <span className="execution-status__icon">{icon}</span>
+        <span className="execution-status__time">{formatDuration(lastExecutionTime)}</span>
+      </span>
+    );
+  }
+
+  return null;
 }
 
 interface CellContentProps {

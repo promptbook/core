@@ -40,6 +40,12 @@ export interface CellState {
 
   // Cell height (for resizable cells)
   height?: number;
+
+  // Execution timing
+  executionStartTime?: number;  // Timestamp when execution started
+  lastExecutionTime?: number;   // Duration of last execution in ms
+  executionCount?: number;      // Like Jupyter's [1], [2], etc.
+  lastExecutionSuccess?: boolean; // Whether last execution succeeded
 }
 
 export function createEmptyCell(id: string, cellType: CellType = 'code'): CellState {
@@ -61,6 +67,10 @@ export function createEmptyCell(id: string, cellType: CellType = 'code'): CellSt
     lastSyncedFull: undefined,
     lastSyncedCode: undefined,
     height: undefined,
+    executionStartTime: undefined,
+    lastExecutionTime: undefined,
+    executionCount: undefined,
+    lastExecutionSuccess: undefined,
   };
 }
 
