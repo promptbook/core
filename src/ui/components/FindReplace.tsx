@@ -104,10 +104,9 @@ export function FindReplace({
 
   const handleReplaceAllClick = useCallback(() => {
     if (!query.trim()) return;
-    const count = onReplaceAll(query, replacement, caseSensitive, useRegex);
+    onReplaceAll(query, replacement, caseSensitive, useRegex);
     setMatches([]);
     setCurrentMatchIndex(0);
-    // Could show a toast: `Replaced ${count} occurrences`
   }, [query, replacement, caseSensitive, useRegex, onReplaceAll]);
 
   // Keyboard shortcuts

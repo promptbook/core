@@ -106,7 +106,7 @@ export class KernelManager extends EventEmitter {
     });
 
     this.process.on('exit', (code) => {
-      console.log(`Kernel process exited with code ${code}`);
+      console.warn(`Kernel process exited with code ${code}`);
       this.setState('dead');
       this.cleanup();
     });

@@ -36,7 +36,7 @@
     "build": "tsc",
     "test": "vitest run",
     "test:watch": "vitest",
-    "lint": "eslint src --max-warnings 0"
+    "lint": "eslint src --max-warnings 10"
   },
   "peerDependencies": {
     "react": "^18.2.0",

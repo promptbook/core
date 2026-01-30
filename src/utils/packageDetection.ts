@@ -79,7 +79,7 @@ export function mapPackageName(importName: string): string {
 export function isValidPackageName(name: string): boolean {
   // Basic validation - alphanumeric, hyphens, underscores, dots
   // Also allow brackets for extras like "package[extra]"
-  return /^[a-zA-Z0-9_\-.\[\]]+$/.test(name) && name.length > 0 && name.length < 100;
+  return /^[a-zA-Z0-9_\-.[\]]+$/.test(name) && name.length > 0 && name.length < 100;
 }
 
 /**
