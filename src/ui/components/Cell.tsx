@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { CellState, StructuredInstructions } from '../../types';
 import { InstructionsEditor } from './InstructionsEditor';
 import { CodeEditor } from './CodeEditor';
@@ -15,8 +15,19 @@ type TabType = 'instructions' | 'code';
 
 export function Cell({ cell, onUpdate, onRun, onSync }: CellProps) {
   const [activeTab, setActiveTab] = useState<TabType>('instructions');
-  const [rawText, setRawText] = useState('');
-  const [isRawMode] = useState(!cell.instructions);
+  const [rawText, setRawText] = useState(cell.instructions?.text || '');
+  const [isRawMode, setIsRawMode] = useState(!cell.instructions);
+
+  // Sync local state when cell.instructions changes from outside (e.g., AI generation)
+  useEffect(() => {
+    if (cell.instructions?.text) {
+      setRawText(cell.instructions.text);
+      // If we have proper instructions now, exit raw mode
+      if (cell.lastSyncedInstructions) {
+        setIsRawMode(false);
+      }
+    }
+  }, [cell.instructions?.text, cell.lastSyncedInstructions]);
 
   const handleTabChange = (tab: TabType) => {
     if (cell.isDirty && tab !== activeTab) {
