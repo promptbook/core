@@ -17,7 +17,9 @@ export interface CellState {
   isDirty: boolean;
   isExecuting: boolean;
   isSyncing: boolean;
-  lastSyncedInstructions?: string; // Cache to avoid redundant AI calls
+  // Cache for incremental sync - tracks what was last synced
+  lastSyncedInstructions?: string;
+  lastSyncedCode?: string;
 }
 
 export function createEmptyCell(id: string): CellState {
@@ -30,5 +32,7 @@ export function createEmptyCell(id: string): CellState {
     isDirty: false,
     isExecuting: false,
     isSyncing: false,
+    lastSyncedInstructions: undefined,
+    lastSyncedCode: undefined,
   };
 }
