@@ -101,6 +101,20 @@ export function extractHashMentions(text: string): string[] {
   return [...new Set(mentions)]; // Remove duplicates
 }
 
+// Few-shot example for structured code output
+const CODE_OUTPUT_EXAMPLE = `
+EXAMPLE INPUT:
+"Calculate the #average_price from the prices list and create a #price_summary function"
+
+EXAMPLE OUTPUT:
+{
+  "code": "def price_summary(prices):\\n    \\"\\"\\"Calculate summary statistics for prices.\\"\\"\\"\\n    return {\\n        'min': min(prices),\\n        'max': max(prices),\\n        'avg': sum(prices) / len(prices)\\n    }\\n\\naverage_price = sum(prices) / len(prices)\\nprint(f'Average price: {average_price:.2f}')",
+  "symbols": [
+    {"name": "price_summary", "kind": "function", "type": "price_summary(prices)", "description": "Calculate summary statistics for prices"},
+    {"name": "average_price", "kind": "variable", "type": "float", "description": "The calculated average of all prices"}
+  ]
+}`;
+
 /**
  * Build a prompt for AI sync based on the direction and context.
  * Used by both Electron and VS Code extension.
@@ -114,63 +128,20 @@ export function buildSyncPrompt(direction: string, context: AiSyncContext): stri
 
   // Handle expand/shorten instructions
   if (direction === 'expandInstructions') {
-    return `Expand these instructions with more detail while keeping the same meaning.
-Keep parameters in {{name:value}} format. Add context about what each step does.
-
-Current instructions:
-${newContent}
-
-Return ONLY the expanded instructions, no code or markdown.`;
+    return buildExpandPrompt(newContent);
   }
 
   if (direction === 'shortenInstructions') {
-    return `Make these instructions more concise (1 short sentence preferred).
-Keep parameters in {{name:value}} format. Remove unnecessary words.
-Don't mention "Python" or "code" - it's obvious.
-Use action words: "Generate", "Calculate", "Plot", etc.
-
-Current instructions:
-${newContent}
-
-Return ONLY the shortened instructions, no code or markdown.`;
+    return buildShortenPrompt(newContent);
   }
 
   // Handle description-to-description conversions
   if (direction === 'shortToFull') {
-    return `Expand this short description into a fuller, more detailed description.
-
-SHORT DESCRIPTION:
-${newContent}
-
-${existingCounterpart ? `EXISTING FULL DESCRIPTION (use as reference):
-${existingCounterpart}
-
-` : ''}GUIDELINES:
-- Write 2-4 sentences with more detail
-- Keep ALL parameters in {{name:value}} format
-- Explain the purpose and approach
-- Describe expected inputs and outputs
-- Don't add parameters that aren't in the short description
-
-Return ONLY the expanded description, no code or markdown.`;
+    return buildShortToFullPrompt(newContent, existingCounterpart);
   }
 
   if (direction === 'fullToShort') {
-    return `Condense this full description into a short, concise summary.
-
-FULL DESCRIPTION:
-${newContent}
-
-${existingCounterpart ? `EXISTING SHORT DESCRIPTION (use as reference):
-${existingCounterpart}
-
-` : ''}GUIDELINES:
-- Maximum 1 short sentence (5-10 words)
-- Start with action verb: "Generate", "Calculate", "Plot", etc.
-- Keep the most important parameters in {{name:value}} format
-- Don't mention "Python" or "code"
-
-Return ONLY the shortened description, no code or markdown.`;
+    return buildFullToShortPrompt(newContent, existingCounterpart);
   }
 
   // Normalize direction types
@@ -184,7 +155,120 @@ Return ONLY the shortened description, no code or markdown.`;
   const hasChanges = previousContent && previousContent !== newContent;
 
   if (isToCode) {
-    const notebookContext = cellsContext ? `
+    return buildToCodePrompt({
+      newContent,
+      previousContent,
+      existingCounterpart,
+      cellsContext,
+      mentionedSymbols,
+      hasExistingCode: !!hasExistingCode,
+      hasChanges: !!hasChanges,
+    });
+  } else {
+    return buildToDescriptionPrompt({
+      newContent,
+      previousContent,
+      existingCounterpart,
+      isToShort,
+      hasExistingInstructions: !!hasExistingInstructions,
+      hasChanges: !!hasChanges,
+    });
+  }
+}
+
+function buildExpandPrompt(content: string): string {
+  return `Expand these instructions with more detail while keeping the same meaning.
+Keep parameters in {{name:value}} format. Add context about what each step does.
+Preserve any #variable or #function mentions exactly as written.
+
+EXAMPLE:
+Input: "Generate #fibonacci_numbers up to {{count:10}}"
+Output: "Generate a sequence of #fibonacci_numbers up to {{count:10}} values. Each number in the sequence is the sum of the two preceding numbers, starting from 0 and 1."
+
+Current instructions:
+${content}
+
+Return ONLY the expanded instructions, no code or markdown.`;
+}
+
+function buildShortenPrompt(content: string): string {
+  return `Make these instructions more concise (1 short sentence preferred).
+Keep parameters in {{name:value}} format. Remove unnecessary words.
+Preserve any #variable or #function mentions exactly as written.
+Don't mention "Python" or "code" - it's obvious.
+Use action words: "Generate", "Calculate", "Plot", etc.
+
+EXAMPLE:
+Input: "Create a function called price_summary that takes a list of prices and calculates the minimum, maximum, and average values, then store the average in a variable"
+Output: "Create #price_summary function and calculate #average_price from prices"
+
+Current instructions:
+${content}
+
+Return ONLY the shortened instructions, no code or markdown.`;
+}
+
+function buildShortToFullPrompt(content: string, existingCounterpart?: string): string {
+  return `Expand this short description into a fuller, more detailed description.
+
+SHORT DESCRIPTION:
+${content}
+
+${existingCounterpart ? `EXISTING FULL DESCRIPTION (use as reference):
+${existingCounterpart}
+
+` : ''}GUIDELINES:
+- Write 2-4 sentences with more detail
+- Keep ALL parameters in {{name:value}} format
+- Keep ALL #variable and #function mentions exactly as written
+- Explain the purpose and approach
+- Describe expected inputs and outputs
+- Don't add parameters that aren't in the short description
+
+EXAMPLE:
+Input: "Calculate #moving_average for {{window:7}} days"
+Output: "Calculate the #moving_average over a sliding {{window:7}} day period. This smooths out short-term fluctuations and highlights longer-term trends in the data. The result will be stored in #moving_average for use in subsequent analysis."
+
+Return ONLY the expanded description, no code or markdown.`;
+}
+
+function buildFullToShortPrompt(content: string, existingCounterpart?: string): string {
+  return `Condense this full description into a short, concise summary.
+
+FULL DESCRIPTION:
+${content}
+
+${existingCounterpart ? `EXISTING SHORT DESCRIPTION (use as reference):
+${existingCounterpart}
+
+` : ''}GUIDELINES:
+- Maximum 1 short sentence (5-10 words)
+- Start with action verb: "Generate", "Calculate", "Plot", etc.
+- Keep the most important parameters in {{name:value}} format
+- Keep the most important #variable and #function mentions
+- Don't mention "Python" or "code"
+
+EXAMPLE:
+Input: "Load the sales data from a CSV file and calculate the total revenue by summing all transaction amounts. Store the result in a variable for later reporting."
+Output: "Load sales CSV, calculate #total_revenue"
+
+Return ONLY the shortened description, no code or markdown.`;
+}
+
+interface ToCodePromptOptions {
+  newContent: string;
+  previousContent?: string;
+  existingCounterpart?: string;
+  cellsContext: string;
+  mentionedSymbols: string[];
+  hasExistingCode: boolean;
+  hasChanges: boolean;
+}
+
+function buildToCodePrompt(opts: ToCodePromptOptions): string {
+  const { newContent, previousContent, existingCounterpart, cellsContext, mentionedSymbols, hasExistingCode, hasChanges } = opts;
+
+  const notebookContext = cellsContext ? `
 NOTEBOOK CONTEXT (this cell is part of a larger notebook):
 ${cellsContext}
 CRITICAL REQUIREMENTS:
@@ -196,32 +280,26 @@ CRITICAL REQUIREMENTS:
 
 ` : '';
 
-    // Add proposed symbol names if any #mentions were found
-    const proposedNames = mentionedSymbols.length > 0 ? `
+  const proposedNames = mentionedSymbols.length > 0 ? `
 PROPOSED NAMES (use these exact names for new variables/functions):
 ${mentionedSymbols.map(s => `- ${s}`).join('\n')}
 When creating new variables or functions, use these names exactly as specified.
 
 ` : '';
 
-    const structuredOutputInstructions = `
+  const structuredOutputInstructions = `
 OUTPUT FORMAT:
-Return your response as JSON with this exact structure:
-{
-  "code": "the python code here",
-  "symbols": [
-    {"name": "variable_name", "kind": "variable", "type": "DataFrame(100x5)", "description": "Brief description of what it contains"},
-    {"name": "function_name", "kind": "function", "type": "function_name(param1, param2)", "description": "Brief description of what it does"}
-  ]
-}
+Return your response as a JSON object. Use \\n for newlines in code strings.
+${CODE_OUTPUT_EXAMPLE}
 
-The "symbols" array should list ALL new variables and functions defined in this cell (not imports or reused variables from earlier cells).
-For variables: include their type and a brief description of their contents.
-For functions: include their signature and a brief description of their purpose.`;
+IMPORTANT:
+- The "code" field must be a valid JSON string (escape newlines as \\n, quotes as \\")
+- List ALL new variables and functions in "symbols" (not imports or reused variables)
+- For variables: include type (e.g., "list", "DataFrame(100x5)", "float") and brief description
+- For functions: include signature (e.g., "calc_avg(prices)") and purpose`;
 
-    if (hasExistingCode && hasChanges) {
-      // Incremental update: instructions changed, update existing code
-      return `You are updating Python code based on changed instructions.
+  if (hasExistingCode && hasChanges) {
+    return `You are updating Python code based on changed instructions.
 ${notebookContext}${proposedNames}
 PREVIOUS INSTRUCTIONS:
 ${previousContent}
@@ -234,11 +312,10 @@ CURRENT CODE:
 ${existingCounterpart}
 \`\`\`
 
-Update the code to reflect the new instructions. Make MINIMAL changes - only modify what's necessary to implement the changes. Keep the code structure, variable names, and style consistent with the existing code unless the changes require otherwise.
+Update the code to reflect the new instructions. Make MINIMAL changes - only modify what's necessary. Keep code structure, variable names, and style consistent unless changes require otherwise.
 ${structuredOutputInstructions}`;
-    } else if (hasExistingCode) {
-      // Existing code but no tracked changes - still use it as reference
-      return `You are generating Python code for a task. There is existing code that may be relevant.
+  } else if (hasExistingCode) {
+    return `You are generating Python code for a task. There is existing code that may be relevant.
 ${notebookContext}${proposedNames}
 INSTRUCTIONS:
 ${newContent}
@@ -250,40 +327,67 @@ ${existingCounterpart}
 
 Generate code that implements the instructions. If the existing code is close to what's needed, make minimal modifications. Otherwise, write new code following the same coding style.
 ${structuredOutputInstructions}`;
-    } else {
-      // Fresh generation
-      return `Generate Python code for the following task. Write clean, efficient, and well-structured code.
+  } else {
+    return `Generate Python code for the following task. Write clean, efficient, and well-structured code.
 ${notebookContext}${proposedNames}
 TASK:
 ${newContent}
 ${structuredOutputInstructions}`;
-    }
-  } else {
-    // toInstructions - differentiate between short and full descriptions
-    const shortGuidelines = `
+  }
+}
+
+interface ToDescriptionPromptOptions {
+  newContent: string;
+  previousContent?: string;
+  existingCounterpart?: string;
+  isToShort: boolean;
+  hasExistingInstructions: boolean;
+  hasChanges: boolean;
+}
+
+function buildToDescriptionPrompt(opts: ToDescriptionPromptOptions): string {
+  const { newContent, previousContent, existingCounterpart, isToShort, hasExistingInstructions, hasChanges } = opts;
+
+  const shortGuidelines = `
 GUIDELINES FOR SHORT DESCRIPTION:
 - Maximum 1 short sentence (5-10 words)
 - Start with action verb: "Generate", "Calculate", "Plot", "Load", etc.
 - Don't mention "Python" or "code" - it's obvious
 - Include key parameters as {{name:value}} placeholders
-- Example: "Generate first {{count:10}} Fibonacci numbers"
-- Example: "Plot {{metric:temperature}} trends"`;
+- Use #variable_name to reference important variables defined in code
+- Use #function_name to reference important functions defined in code
 
-    const fullGuidelines = `
+EXAMPLES:
+Code: \`fibonacci = [0, 1]; [fibonacci.append(fibonacci[-1] + fibonacci[-2]) for _ in range(8)]\`
+Output: "Generate first {{count:10}} #fibonacci numbers"
+
+Code: \`avg_price = sum(prices) / len(prices)\`
+Output: "Calculate #avg_price from prices list"
+
+Code: \`df = pd.read_csv('sales.csv'); monthly = df.groupby('month').sum()\`
+Output: "Load sales CSV, create #monthly summary"`;
+
+  const fullGuidelines = `
 GUIDELINES FOR FULL DESCRIPTION:
 - 2-4 sentences with more detail
 - Describe the purpose and approach
 - Include ALL parameters as {{name:value}} placeholders
+- Use #variable_name to reference important variables defined in code
+- Use #function_name to reference important functions defined in code
 - Explain what inputs are expected and what outputs are produced
-- Example: "Generate the first {{count:10}} Fibonacci numbers starting from {{start:0}}. Store results in a list and print each number."
-- Example: "Load data from {{file:data.csv}} and plot {{metric:temperature}} over {{period:last 7 days}}. Use matplotlib with a line chart."`;
 
-    const guidelines = isToShort ? shortGuidelines : fullGuidelines;
-    const lengthHint = isToShort ? 'Keep it very short (1 sentence, 5-10 words).' : 'Include 2-4 sentences with details.';
+EXAMPLES:
+Code: \`def calc_fibonacci(n): ... ; fibonacci = calc_fibonacci(10)\`
+Output: "Define #calc_fibonacci function that generates Fibonacci sequence. Call it with {{count:10}} to generate the first 10 numbers and store in #fibonacci list."
 
-    if (hasExistingInstructions && hasChanges) {
-      // Code changed, update existing instructions
-      return `You are updating ${isToShort ? 'a SHORT description' : 'a FULL description'} based on changed code.
+Code: \`prices = load_data(); avg = sum(prices)/len(prices); std = statistics.stdev(prices)\`
+Output: "Load price data and calculate statistics. Compute #avg (mean) and #std (standard deviation) for analysis."`;
+
+  const guidelines = isToShort ? shortGuidelines : fullGuidelines;
+  const lengthHint = isToShort ? 'Keep it very short (1 sentence, 5-10 words).' : 'Include 2-4 sentences with details.';
+
+  if (hasExistingInstructions && hasChanges) {
+    return `You are updating ${isToShort ? 'a SHORT description' : 'a FULL description'} based on changed code.
 
 PREVIOUS CODE:
 \`\`\`python
@@ -302,9 +406,8 @@ ${guidelines}
 Update the description to accurately describe what the new code does. ${lengthHint}
 
 Return ONLY the updated description, no code or markdown.`;
-    } else if (hasExistingInstructions) {
-      // Existing instructions as reference
-      return `You are generating a ${isToShort ? 'SHORT' : 'FULL'} description for code.
+  } else if (hasExistingInstructions) {
+    return `You are generating a ${isToShort ? 'SHORT' : 'FULL'} description for code.
 
 CODE:
 \`\`\`python
@@ -318,9 +421,8 @@ ${guidelines}
 ${lengthHint}
 
 Return ONLY the description, no code or markdown.`;
-    } else {
-      // Fresh generation
-      return `Generate a ${isToShort ? 'SHORT' : 'FULL'} description for this code.
+  } else {
+    return `Generate a ${isToShort ? 'SHORT' : 'FULL'} description for this code.
 ${guidelines}
 
 CODE:
@@ -331,6 +433,5 @@ ${newContent}
 ${lengthHint}
 
 Return ONLY the description, no code or markdown.`;
-    }
   }
 }
