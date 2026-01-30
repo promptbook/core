@@ -17,6 +17,19 @@ interface CellProps {
 // Utility to escape regex special characters
 const escapeRegex = (str: string) => str.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
 
+// Collapse icons
+const CollapseIcon = () => (
+  <svg width="12" height="12" viewBox="0 0 12 12" fill="none" stroke="currentColor" strokeWidth="1.5">
+    <path d="M3 4.5l3 3 3-3" />
+  </svg>
+);
+
+const ExpandIcon = () => (
+  <svg width="12" height="12" viewBox="0 0 12 12" fill="none" stroke="currentColor" strokeWidth="1.5">
+    <path d="M4.5 3l3 3-3 3" />
+  </svg>
+);
+
 export function Cell({ cell, onUpdate, onRun, onSync, isActive, onFocus }: CellProps) {
   const [activeTab, setActiveTab] = useState<CodeCellTab>(cell.lastEditedTab || 'short');
   const cellRef = useRef<HTMLDivElement>(null);
@@ -26,6 +39,15 @@ export function Cell({ cell, onUpdate, onRun, onSync, isActive, onFocus }: CellP
     initialHeight: cell.height,
     onHeightChange: useCallback((height: number) => onUpdate(cell.id, { height }), [cell.id, onUpdate]),
   });
+
+  // Collapse handlers
+  const handleToggleInputCollapse = useCallback(() => {
+    onUpdate(cell.id, { isInputCollapsed: !cell.isInputCollapsed });
+  }, [cell.id, cell.isInputCollapsed, onUpdate]);
+
+  const handleToggleOutputCollapse = useCallback(() => {
+    onUpdate(cell.id, { isOutputCollapsed: !cell.isOutputCollapsed });
+  }, [cell.id, cell.isOutputCollapsed, onUpdate]);
 
   // Handle tab change with sync
   const handleTabChange = (tab: CodeCellTab) => {
@@ -67,7 +89,21 @@ export function Cell({ cell, onUpdate, onRun, onSync, isActive, onFocus }: CellP
     if (Object.keys(updates).length > 0) onUpdate(cell.id, updates);
   };
 
-  const cellClasses = `cell ${cell.isExecuting ? 'cell--executing' : ''} ${cell.isSyncing ? 'cell--syncing' : ''} ${isActive ? 'cell--active' : ''}`;
+  const cellClasses = `cell ${cell.isExecuting ? 'cell--executing' : ''} ${cell.isSyncing ? 'cell--syncing' : ''} ${isActive ? 'cell--active' : ''} ${cell.isInputCollapsed ? 'cell--input-collapsed' : ''}`;
+
+  // Get preview text for collapsed state
+  const getCollapsedPreview = (): string => {
+    if (activeTab === 'code' && cell.code) {
+      return cell.code.split('\n')[0].slice(0, 80) + (cell.code.length > 80 ? '...' : '');
+    }
+    if (activeTab === 'short' && cell.shortDescription) {
+      return cell.shortDescription.slice(0, 80) + (cell.shortDescription.length > 80 ? '...' : '');
+    }
+    if (activeTab === 'full' && cell.fullDescription) {
+      return cell.fullDescription.slice(0, 80) + (cell.fullDescription.length > 80 ? '...' : '');
+    }
+    return 'Empty cell';
+  };
 
   return (
     <div ref={cellRef} className={cellClasses} onClick={() => onFocus?.(cell.id)} tabIndex={0} onFocus={() => onFocus?.(cell.id)}>
@@ -83,22 +119,46 @@ export function Cell({ cell, onUpdate, onRun, onSync, isActive, onFocus }: CellP
         lastExecutionTime={cell.lastExecutionTime}
         lastExecutionSuccess={cell.lastExecutionSuccess}
         executionCount={cell.executionCount}
+        isInputCollapsed={cell.isInputCollapsed}
+        onToggleInputCollapse={handleToggleInputCollapse}
       />
-      <CellContent
-        activeTab={activeTab}
-        cell={cell}
-        contentHeight={contentHeight}
-        onShortChange={handleShortChange}
-        onFullChange={handleFullChange}
-        onCodeChange={handleCodeChange}
-        onParameterChange={handleParameterChange}
-      />
-      <div className={`cell-resize-handle ${isResizing ? 'cell-resize-handle--active' : ''}`} onMouseDown={handleResizeStart}>
-        <div className="cell-resize-handle__grip" />
-      </div>
+      {cell.isInputCollapsed ? (
+        <div className="cell-collapsed-preview" onClick={handleToggleInputCollapse}>
+          <span className="cell-collapsed-preview__text">{getCollapsedPreview()}</span>
+          <span className="cell-collapsed-preview__hint">Click to expand</span>
+        </div>
+      ) : (
+        <>
+          <CellContent
+            activeTab={activeTab}
+            cell={cell}
+            contentHeight={contentHeight}
+            onShortChange={handleShortChange}
+            onFullChange={handleFullChange}
+            onCodeChange={handleCodeChange}
+            onParameterChange={handleParameterChange}
+          />
+          <div className={`cell-resize-handle ${isResizing ? 'cell-resize-handle--active' : ''}`} onMouseDown={handleResizeStart}>
+            <div className="cell-resize-handle__grip" />
+          </div>
+        </>
+      )}
       {cell.outputs.length > 0 && (
-        <div className="cell-output">
-          <OutputArea outputs={cell.outputs} />
+        <div className={`cell-output ${cell.isOutputCollapsed ? 'cell-output--collapsed' : ''}`}>
+          <div className="cell-output-header" onClick={handleToggleOutputCollapse}>
+            <span className="cell-output-header__icon">
+              {cell.isOutputCollapsed ? <ExpandIcon /> : <CollapseIcon />}
+            </span>
+            <span className="cell-output-header__label">
+              Output {cell.executionCount ? `[${cell.executionCount}]` : ''}
+            </span>
+            {cell.isOutputCollapsed && (
+              <span className="cell-output-header__preview">
+                {cell.outputs[0]?.content.slice(0, 50)}...
+              </span>
+            )}
+          </div>
+          {!cell.isOutputCollapsed && <OutputArea outputs={cell.outputs} />}
         </div>
       )}
     </div>
@@ -118,15 +178,27 @@ interface CellToolbarProps {
   lastExecutionTime?: number;
   lastExecutionSuccess?: boolean;
   executionCount?: number;
+  isInputCollapsed?: boolean;
+  onToggleInputCollapse: () => void;
 }
 
-function CellToolbar({ activeTab, onTabChange, isDirty, isSyncing, isExecuting, onSync, onRun, executionStartTime, lastExecutionTime, lastExecutionSuccess, executionCount }: CellToolbarProps) {
+function CellToolbar({ activeTab, onTabChange, isDirty, isSyncing, isExecuting, onSync, onRun, executionStartTime, lastExecutionTime, lastExecutionSuccess, executionCount, isInputCollapsed, onToggleInputCollapse }: CellToolbarProps) {
   return (
     <div className="cell-toolbar">
-      <div className="cell-tabs" role="tablist">
-        <button role="tab" aria-selected={activeTab === 'short'} onClick={() => onTabChange('short')}>Short</button>
-        <button role="tab" aria-selected={activeTab === 'full'} onClick={() => onTabChange('full')}>Full</button>
-        <button role="tab" aria-selected={activeTab === 'code'} onClick={() => onTabChange('code')}>Code</button>
+      <div className="cell-toolbar-left">
+        <button
+          className="cell-collapse-btn"
+          onClick={(e) => { e.stopPropagation(); onToggleInputCollapse(); }}
+          title={isInputCollapsed ? 'Expand cell' : 'Collapse cell'}
+          aria-label={isInputCollapsed ? 'Expand cell' : 'Collapse cell'}
+        >
+          {isInputCollapsed ? <ExpandIcon /> : <CollapseIcon />}
+        </button>
+        <div className="cell-tabs" role="tablist">
+          <button role="tab" aria-selected={activeTab === 'short'} onClick={() => onTabChange('short')}>Short</button>
+          <button role="tab" aria-selected={activeTab === 'full'} onClick={() => onTabChange('full')}>Full</button>
+          <button role="tab" aria-selected={activeTab === 'code'} onClick={() => onTabChange('code')}>Code</button>
+        </div>
       </div>
       <div className="cell-actions">
         <ExecutionStatus isExecuting={isExecuting} executionStartTime={executionStartTime} lastExecutionTime={lastExecutionTime} lastExecutionSuccess={lastExecutionSuccess} executionCount={executionCount} />

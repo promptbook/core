@@ -49,6 +49,10 @@ export interface CellState {
 
   // Parameter tracking for smart sync
   lastSyncedParams?: Record<string, string>; // Parameter values at last sync
+
+  // Cell collapsing
+  isInputCollapsed?: boolean;  // Whether cell input is collapsed
+  isOutputCollapsed?: boolean; // Whether cell output is collapsed
 }
 
 export function createEmptyCell(id: string, cellType: CellType = 'code'): CellState {
@@ -75,6 +79,8 @@ export function createEmptyCell(id: string, cellType: CellType = 'code'): CellSt
     executionCount: undefined,
     lastExecutionSuccess: undefined,
     lastSyncedParams: undefined,
+    isInputCollapsed: false,
+    isOutputCollapsed: false,
   };
 }
 

@@ -838,3 +838,112 @@
 .parameter-input:focus {
   box-shadow: 0 0 0 2px var(--pb-accent-dim);
 }
+
+/* ─────────────────────────────────────────
+   Cell Collapsing
+   ───────────────────────────────────────── */
+
+.cell-toolbar-left {
+  display: flex;
+  align-items: center;
+  gap: var(--pb-space-2);
+}
+
+.cell-collapse-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 24px;
+  height: 24px;
+  padding: 0;
+  color: var(--pb-text-tertiary);
+  background: transparent;
+  border: none;
+  border-radius: var(--pb-radius-sm);
+  cursor: pointer;
+  transition: all var(--pb-duration-fast) var(--pb-ease);
+}
+
+.cell-collapse-btn:hover {
+  color: var(--pb-text-primary);
+  background: var(--pb-bg-hover);
+}
+
+.cell--input-collapsed .cell-toolbar {
+  border-bottom: none;
+}
+
+.cell-collapsed-preview {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: var(--pb-space-3) var(--pb-space-4);
+  cursor: pointer;
+  background: var(--pb-bg-secondary);
+  border-top: 1px solid var(--pb-border-subtle);
+  transition: background var(--pb-duration-fast) var(--pb-ease);
+}
+
+.cell-collapsed-preview:hover {
+  background: var(--pb-bg-hover);
+}
+
+.cell-collapsed-preview__text {
+  font-family: var(--pb-font-mono);
+  font-size: var(--pb-text-sm);
+  color: var(--pb-text-secondary);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  flex: 1;
+}
+
+.cell-collapsed-preview__hint {
+  font-size: var(--pb-text-xs);
+  color: var(--pb-text-tertiary);
+  margin-left: var(--pb-space-3);
+}
+
+/* Output Collapsing */
+.cell-output-header {
+  display: flex;
+  align-items: center;
+  gap: var(--pb-space-2);
+  padding: var(--pb-space-2) var(--pb-space-4);
+  cursor: pointer;
+  background: var(--pb-bg-secondary);
+  border-bottom: 1px solid var(--pb-border-subtle);
+  transition: background var(--pb-duration-fast) var(--pb-ease);
+}
+
+.cell-output-header:hover {
+  background: var(--pb-bg-hover);
+}
+
+.cell-output-header__icon {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  color: var(--pb-text-tertiary);
+}
+
+.cell-output-header__label {
+  font-size: var(--pb-text-xs);
+  font-weight: 500;
+  color: var(--pb-text-secondary);
+}
+
+.cell-output-header__preview {
+  flex: 1;
+  font-family: var(--pb-font-mono);
+  font-size: var(--pb-text-xs);
+  color: var(--pb-text-tertiary);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  margin-left: var(--pb-space-2);
+}
+
+.cell-output--collapsed .output-area {
+  display: none;
+}

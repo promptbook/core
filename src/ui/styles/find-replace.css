@@ -1,0 +1,190 @@
+/* ============================================
+   Find & Replace Panel
+   ============================================ */
+
+.find-replace {
+  position: fixed;
+  top: 60px;
+  right: 16px;
+  z-index: 200;
+  background: var(--pb-bg-primary);
+  border: 1px solid var(--pb-border);
+  border-radius: var(--pb-radius-lg);
+  box-shadow: var(--pb-shadow-lg);
+  padding: var(--pb-space-3);
+  display: flex;
+  flex-direction: column;
+  gap: var(--pb-space-2);
+  min-width: 400px;
+  animation: slideInFromTop var(--pb-duration-base) var(--pb-ease-out);
+}
+
+@keyframes slideInFromTop {
+  from {
+    transform: translateY(-20px);
+    opacity: 0;
+  }
+  to {
+    transform: translateY(0);
+    opacity: 1;
+  }
+}
+
+.find-replace__row {
+  display: flex;
+  align-items: center;
+  gap: var(--pb-space-2);
+}
+
+.find-replace__input {
+  flex: 1;
+  padding: var(--pb-space-2) var(--pb-space-3);
+  font-size: var(--pb-text-sm);
+  color: var(--pb-text-primary);
+  background: var(--pb-bg-secondary);
+  border: 1px solid var(--pb-border);
+  border-radius: var(--pb-radius-md);
+  outline: none;
+  transition: border-color var(--pb-duration-fast) var(--pb-ease);
+}
+
+.find-replace__input:focus {
+  border-color: var(--pb-accent);
+}
+
+.find-replace__input::placeholder {
+  color: var(--pb-text-tertiary);
+}
+
+.find-replace__options {
+  display: flex;
+  gap: var(--pb-space-1);
+}
+
+.find-replace__option {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 28px;
+  height: 28px;
+  padding: 0;
+  font-size: var(--pb-text-xs);
+  font-weight: 600;
+  color: var(--pb-text-tertiary);
+  background: var(--pb-bg-secondary);
+  border: 1px solid var(--pb-border);
+  border-radius: var(--pb-radius-sm);
+  cursor: pointer;
+  transition: all var(--pb-duration-fast) var(--pb-ease);
+}
+
+.find-replace__option:hover {
+  color: var(--pb-text-secondary);
+  border-color: var(--pb-border-strong);
+}
+
+.find-replace__option--active {
+  color: var(--pb-accent);
+  background: var(--pb-accent-dim);
+  border-color: var(--pb-accent);
+}
+
+.find-replace__count {
+  font-size: var(--pb-text-xs);
+  color: var(--pb-text-tertiary);
+  min-width: 70px;
+  text-align: center;
+}
+
+.find-replace__nav {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 28px;
+  height: 28px;
+  padding: 0;
+  color: var(--pb-text-tertiary);
+  background: transparent;
+  border: none;
+  border-radius: var(--pb-radius-sm);
+  cursor: pointer;
+  transition: all var(--pb-duration-fast) var(--pb-ease);
+}
+
+.find-replace__nav:hover:not(:disabled) {
+  color: var(--pb-text-primary);
+  background: var(--pb-bg-hover);
+}
+
+.find-replace__nav:disabled {
+  opacity: 0.4;
+  cursor: not-allowed;
+}
+
+.find-replace__toggle {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 28px;
+  height: 28px;
+  padding: 0;
+  font-size: var(--pb-text-sm);
+  color: var(--pb-text-tertiary);
+  background: transparent;
+  border: none;
+  border-radius: var(--pb-radius-sm);
+  cursor: pointer;
+  transition: all var(--pb-duration-fast) var(--pb-ease);
+}
+
+.find-replace__toggle:hover {
+  color: var(--pb-text-primary);
+  background: var(--pb-bg-hover);
+}
+
+.find-replace__toggle--active {
+  color: var(--pb-accent);
+}
+
+.find-replace__close {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 28px;
+  height: 28px;
+  padding: 0;
+  color: var(--pb-text-tertiary);
+  background: transparent;
+  border: none;
+  border-radius: var(--pb-radius-sm);
+  cursor: pointer;
+  transition: all var(--pb-duration-fast) var(--pb-ease);
+}
+
+.find-replace__close:hover {
+  color: var(--pb-text-primary);
+  background: var(--pb-bg-hover);
+}
+
+.find-replace__action {
+  padding: var(--pb-space-1-5) var(--pb-space-3);
+  font-size: var(--pb-text-xs);
+  font-weight: 500;
+  color: var(--pb-text-secondary);
+  background: var(--pb-bg-secondary);
+  border: 1px solid var(--pb-border);
+  border-radius: var(--pb-radius-md);
+  cursor: pointer;
+  transition: all var(--pb-duration-fast) var(--pb-ease);
+}
+
+.find-replace__action:hover:not(:disabled) {
+  color: var(--pb-text-primary);
+  background: var(--pb-bg-hover);
+  border-color: var(--pb-border-strong);
+}
+
+.find-replace__action:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}

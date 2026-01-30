@@ -8,3 +8,7 @@ export { ParameterControls } from './ParameterControls';
 export { OutputArea } from './OutputArea';
 export { KernelStatus } from './KernelStatus';
 export { EnvironmentPicker } from './EnvironmentPicker';
+export { VariableInspector } from './VariableInspector';
+export type { Variable } from './VariableInspector';
+export { FindReplace } from './FindReplace';
+export type { SearchMatch } from './FindReplace';

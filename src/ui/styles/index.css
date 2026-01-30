@@ -3,6 +3,8 @@
 @import './parameters.css';
 @import './settings.css';
 @import './kernel-status.css';
+@import './variable-inspector.css';
+@import './find-replace.css';
 
 /* Typography - Geist for a modern, sophisticated feel */
 @import url('https://fonts.googleapis.com/css2?family=Geist:wght@300;400;500;600;700&family=Geist+Mono:wght@400;500;600&display=swap');
@@ -380,6 +382,7 @@ body {
 .app-filename {
   display: inline-flex;
   align-items: center;
+  gap: var(--pb-space-1);
   padding: var(--pb-space-1) var(--pb-space-3);
   font-family: var(--pb-font-mono);
   font-size: var(--pb-text-xs);
@@ -390,10 +393,142 @@ body {
   border: 1px solid var(--pb-border);
 }
 
+.app-filename__unsaved {
+  color: var(--pb-warning);
+  font-size: var(--pb-text-sm);
+  animation: pulse 2s ease-in-out infinite;
+}
+
+@keyframes pulse {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.5; }
+}
+
 .app-actions {
   display: flex;
   align-items: center;
   gap: var(--pb-space-2);
+}
+
+/* ─────────────────────────────────────────
+   Toolbar Group & Dropdown
+   ───────────────────────────────────────── */
+
+.toolbar-group {
+  display: flex;
+  align-items: stretch;
+}
+
+.toolbar-group .toolbar-btn {
+  border-top-right-radius: 0;
+  border-bottom-right-radius: 0;
+}
+
+.toolbar-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--pb-space-1-5);
+  padding: var(--pb-space-1-5) var(--pb-space-2-5);
+  font-size: var(--pb-text-sm);
+  font-weight: 500;
+  color: var(--pb-text-secondary);
+  background: var(--pb-bg-secondary);
+  border: 1px solid var(--pb-border);
+  border-radius: var(--pb-radius-md);
+  cursor: pointer;
+  transition: all var(--pb-duration-fast) var(--pb-ease);
+}
+
+.toolbar-btn:hover {
+  background: var(--pb-bg-hover);
+  border-color: var(--pb-border-strong);
+  color: var(--pb-text-primary);
+}
+
+.toolbar-btn--primary {
+  color: white;
+  background: var(--pb-success);
+  border-color: transparent;
+}
+
+.toolbar-btn--primary:hover {
+  background: var(--pb-success);
+  filter: brightness(1.1);
+  color: white;
+}
+
+.toolbar-dropdown {
+  position: relative;
+}
+
+.toolbar-dropdown-trigger {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: var(--pb-space-1-5) var(--pb-space-1);
+  background: var(--pb-success);
+  border: 1px solid transparent;
+  border-left: 1px solid rgba(255, 255, 255, 0.2);
+  border-top-right-radius: var(--pb-radius-md);
+  border-bottom-right-radius: var(--pb-radius-md);
+  color: white;
+  cursor: pointer;
+  transition: all var(--pb-duration-fast) var(--pb-ease);
+}
+
+.toolbar-dropdown-trigger:hover {
+  filter: brightness(1.1);
+}
+
+.toolbar-dropdown-menu {
+  position: absolute;
+  top: 100%;
+  right: 0;
+  margin-top: var(--pb-space-1);
+  min-width: 160px;
+  padding: var(--pb-space-1);
+  background: var(--pb-bg-elevated);
+  border: 1px solid var(--pb-border);
+  border-radius: var(--pb-radius-lg);
+  box-shadow: var(--pb-shadow-lg);
+  opacity: 0;
+  visibility: hidden;
+  transform: translateY(-4px);
+  transition: all var(--pb-duration-fast) var(--pb-ease);
+  z-index: 200;
+}
+
+.toolbar-dropdown:hover .toolbar-dropdown-menu,
+.toolbar-dropdown:focus-within .toolbar-dropdown-menu {
+  opacity: 1;
+  visibility: visible;
+  transform: translateY(0);
+}
+
+.toolbar-dropdown-menu button {
+  display: block;
+  width: 100%;
+  padding: var(--pb-space-2) var(--pb-space-3);
+  font-size: var(--pb-text-sm);
+  font-weight: 400;
+  color: var(--pb-text-secondary);
+  background: transparent;
+  border: none;
+  border-radius: var(--pb-radius-md);
+  text-align: left;
+  cursor: pointer;
+  transition: all var(--pb-duration-fast) var(--pb-ease);
+}
+
+.toolbar-dropdown-menu button:hover {
+  background: var(--pb-bg-hover);
+  color: var(--pb-text-primary);
+}
+
+.toolbar-dropdown-menu hr {
+  margin: var(--pb-space-1) 0;
+  border: none;
+  border-top: 1px solid var(--pb-border);
 }
 
 /* ─────────────────────────────────────────
