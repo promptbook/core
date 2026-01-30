@@ -16,7 +16,6 @@ export { PackageInstallModal } from './PackageInstallModal';
 export type { InstallAction } from './PackageInstallModal';
 export { FileAutocomplete } from './FileAutocomplete';
 export type { FileEntry, FileAutocompleteProps } from './FileAutocomplete';
-export { SymbolAutocomplete } from './SymbolAutocomplete';
 export type { KernelSymbol, SymbolAutocompleteProps } from './SymbolAutocomplete';
 export { CombinedAutocomplete } from './CombinedAutocomplete';
 export type { CombinedAutocompleteProps } from './CombinedAutocomplete';
