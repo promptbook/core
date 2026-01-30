@@ -46,6 +46,9 @@ export interface CellState {
   lastExecutionTime?: number;   // Duration of last execution in ms
   executionCount?: number;      // Like Jupyter's [1], [2], etc.
   lastExecutionSuccess?: boolean; // Whether last execution succeeded
+
+  // Parameter tracking for smart sync
+  lastSyncedParams?: Record<string, string>; // Parameter values at last sync
 }
 
 export function createEmptyCell(id: string, cellType: CellType = 'code'): CellState {
@@ -71,6 +74,7 @@ export function createEmptyCell(id: string, cellType: CellType = 'code'): CellSt
     lastExecutionTime: undefined,
     executionCount: undefined,
     lastExecutionSuccess: undefined,
+    lastSyncedParams: undefined,
   };
 }
 
