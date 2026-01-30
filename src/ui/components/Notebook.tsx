@@ -3,6 +3,7 @@ import { NotebookState, CellState, CellType } from '../../types';
 import { Cell } from './Cell';
 import { TextCell } from './TextCell';
 import { FileEntry } from './FileAutocomplete';
+import type { KernelSymbol } from './SymbolAutocomplete';
 
 interface NotebookProps {
   notebook: NotebookState;
@@ -16,6 +17,8 @@ interface NotebookProps {
   onCellFocus?: (cellId: string) => void;
   /** Function to list files for @ autocomplete */
   listFiles?: (dirPath?: string) => Promise<{ files: FileEntry[]; cwd: string }>;
+  /** Function to get kernel symbols for # autocomplete */
+  getSymbols?: () => Promise<KernelSymbol[]>;
 }
 
 // Icons
@@ -27,7 +30,7 @@ const Icons = {
   moveDown: <svg width="14" height="14" viewBox="0 0 14 14" fill="none" stroke="currentColor" strokeWidth="1.5"><path d="M7 2v10M3 8l4 4 4-4" /></svg>,
 };
 
-export function Notebook({ notebook, onUpdate, onRunCell, onSyncCell, onAddCell, onDeleteCell, onMoveCell, activeCellId, onCellFocus, listFiles }: NotebookProps) {
+export function Notebook({ notebook, onUpdate, onRunCell, onSyncCell, onAddCell, onDeleteCell, onMoveCell, activeCellId, onCellFocus, listFiles, getSymbols }: NotebookProps) {
   if (notebook.cells.length === 0) {
     return (
       <div className="notebook notebook--empty">
@@ -57,6 +60,7 @@ export function Notebook({ notebook, onUpdate, onRunCell, onSyncCell, onAddCell,
           onMoveCell={onMoveCell}
           onCellFocus={onCellFocus}
           listFiles={listFiles}
+          getSymbols={getSymbols}
         />
       ))}
       <div className="notebook-footer">
@@ -81,15 +85,16 @@ interface CellWrapperProps {
   onMoveCell?: (cellId: string, direction: 'up' | 'down') => void;
   onCellFocus?: (cellId: string) => void;
   listFiles?: (dirPath?: string) => Promise<{ files: FileEntry[]; cwd: string }>;
+  getSymbols?: () => Promise<KernelSymbol[]>;
 }
 
-function CellWrapper({ cell, index, totalCells, activeCellId, onUpdate, onRunCell, onSyncCell, onAddCell, onDeleteCell, onMoveCell, onCellFocus, listFiles }: CellWrapperProps) {
+function CellWrapper({ cell, index, totalCells, activeCellId, onUpdate, onRunCell, onSyncCell, onAddCell, onDeleteCell, onMoveCell, onCellFocus, listFiles, getSymbols }: CellWrapperProps) {
   return (
     <div className="notebook-cell-wrapper">
       {cell.cellType === 'text' ? (
         <TextCell cell={cell} onUpdate={onUpdate} isActive={activeCellId === cell.id} onFocus={onCellFocus} />
       ) : (
-        <Cell cell={cell} onUpdate={onUpdate} onRun={onRunCell} onSync={onSyncCell} isActive={activeCellId === cell.id} onFocus={onCellFocus} listFiles={listFiles} />
+        <Cell cell={cell} onUpdate={onUpdate} onRun={onRunCell} onSync={onSyncCell} isActive={activeCellId === cell.id} onFocus={onCellFocus} listFiles={listFiles} getSymbols={getSymbols} />
       )}
       <div className="cell-controls">
         {onMoveCell && index > 0 && (

@@ -1,6 +1,8 @@
 import React, { useState, useMemo, useRef, useEffect } from 'react';
 import { Parameter } from '../../types/instructions';
-import { FileAutocomplete, FileEntry } from './FileAutocomplete';
+import { FileEntry } from './FileAutocomplete';
+import { CombinedAutocomplete } from './CombinedAutocomplete';
+import type { KernelSymbol } from './SymbolAutocomplete';
 
 interface DescriptionEditorProps {
   content: string;
@@ -11,6 +13,8 @@ interface DescriptionEditorProps {
   minHeight?: number;
   /** Function to list files for @ autocomplete */
   listFiles?: (dirPath?: string) => Promise<{ files: FileEntry[]; cwd: string }>;
+  /** Function to get kernel symbols for # autocomplete */
+  getSymbols?: () => Promise<KernelSymbol[]>;
 }
 
 interface ParsedDescription {
@@ -51,7 +55,7 @@ function updateParameterInText(originalText: string, paramName: string, oldValue
   return originalText.replace(regex, `{{${paramName}:${newValue}}}`);
 }
 
-export function DescriptionEditor({ content, onChange, onParameterChange, placeholder = 'Enter description...', isSyncing = false, minHeight, listFiles }: DescriptionEditorProps) {
+export function DescriptionEditor({ content, onChange, onParameterChange, placeholder = 'Enter description...', isSyncing = false, minHeight, listFiles, getSymbols }: DescriptionEditorProps) {
   const [editingParamId, setEditingParamId] = useState<string | null>(null);
   const [editValue, setEditValue] = useState('');
   const [isEditingText, setIsEditingText] = useState(false);
@@ -111,7 +115,7 @@ export function DescriptionEditor({ content, onChange, onParameterChange, placeh
   return (
     <div className={`description-editor ${isSyncing ? 'description-editor--syncing' : ''}`}>
       {isEditingText ? (
-        <TextEditMode textareaRef={textareaRef} value={editingTextValue} onChange={setEditingTextValue} onBlur={handleTextSubmit} onKeyDown={handleTextKeyDown} placeholder={placeholder} minHeight={minHeight} listFiles={listFiles} />
+        <TextEditMode textareaRef={textareaRef} value={editingTextValue} onChange={setEditingTextValue} onBlur={handleTextSubmit} onKeyDown={handleTextKeyDown} placeholder={placeholder} minHeight={minHeight} listFiles={listFiles} getSymbols={getSymbols} />
       ) : (
         <div className="description-text description-text--editable" onClick={handleTextClick} title="Click to edit" style={heightStyle}>
           <TextWithParameters parsed={parsed} editingParamId={editingParamId} editValue={editValue} onEditValueChange={setEditValue} onParameterClick={handleParameterClick} onParameterSubmit={handleParameterSubmit} onParamKeyDown={handleParamKeyDown} placeholder={placeholder} />
@@ -131,18 +135,22 @@ interface TextEditModeProps {
   placeholder: string;
   minHeight?: number;
   listFiles?: (dirPath?: string) => Promise<{ files: FileEntry[]; cwd: string }>;
+  getSymbols?: () => Promise<KernelSymbol[]>;
 }
 
-function TextEditMode({ textareaRef, value, onChange, onBlur, onKeyDown, placeholder, minHeight, listFiles }: TextEditModeProps) {
+function TextEditMode({ textareaRef, value, onChange, onBlur, onKeyDown, placeholder, minHeight, listFiles, getSymbols }: TextEditModeProps) {
+  const hasAutocomplete = listFiles || getSymbols;
+
   return (
     <div className="description-text-edit">
-      {listFiles ? (
-        <FileAutocomplete
+      {hasAutocomplete ? (
+        <CombinedAutocomplete
           value={value}
           onChange={onChange}
           onBlur={onBlur}
           onKeyDown={onKeyDown}
           listFiles={listFiles}
+          getSymbols={getSymbols}
           placeholder={placeholder}
           className="description-textarea"
           textareaRef={textareaRef}
@@ -160,7 +168,7 @@ function TextEditMode({ textareaRef, value, onChange, onBlur, onKeyDown, placeho
         />
       )}
       <div className="description-edit-hint">
-        Press <kbd>⌘</kbd>+<kbd>Enter</kbd> to save, <kbd>Esc</kbd> to cancel (type @ for file autocomplete)
+        Press <kbd>⌘</kbd>+<kbd>Enter</kbd> to save, <kbd>Esc</kbd> to cancel{listFiles ? ' (@ for files' : ''}{getSymbols ? (listFiles ? ', # for variables)' : ' (# for variables)') : (listFiles ? ')' : '')}
       </div>
     </div>
   );

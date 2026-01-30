@@ -7,3 +7,6 @@ export type { StructuredInstructions, Parameter, ParamType } from '../types/inst
 // Note: KernelState, KernelOutput, PythonEnvironment should be imported from @promptbook/core/kernel
 export { createEmptyCell, createCodeCell, createTextCell } from '../types/cell';
 export { createEmptyNotebook } from '../types/notebook';
+
+// Re-export symbol types for autocomplete
+export type { KernelSymbol, SymbolAutocompleteProps } from './components/SymbolAutocomplete';

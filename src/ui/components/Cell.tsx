@@ -5,6 +5,7 @@ import { CodeEditor } from './CodeEditor';
 import { OutputArea } from './OutputArea';
 import { useCellResize } from '../hooks/useCellResize';
 import { FileEntry } from './FileAutocomplete';
+import type { KernelSymbol } from './SymbolAutocomplete';
 
 interface CellProps {
   cell: CellState;
@@ -15,6 +16,8 @@ interface CellProps {
   onFocus?: (cellId: string) => void;
   /** Function to list files for @ autocomplete */
   listFiles?: (dirPath?: string) => Promise<{ files: FileEntry[]; cwd: string }>;
+  /** Function to get kernel symbols for # autocomplete */
+  getSymbols?: () => Promise<KernelSymbol[]>;
 }
 
 // Utility to escape regex special characters
@@ -33,7 +36,7 @@ const ExpandIcon = () => (
   </svg>
 );
 
-export function Cell({ cell, onUpdate, onRun, onSync, isActive, onFocus, listFiles }: CellProps) {
+export function Cell({ cell, onUpdate, onRun, onSync, isActive, onFocus, listFiles, getSymbols }: CellProps) {
   const [activeTab, setActiveTab] = useState<CodeCellTab>(cell.lastEditedTab || 'short');
   const cellRef = useRef<HTMLDivElement>(null);
 
@@ -141,6 +144,7 @@ export function Cell({ cell, onUpdate, onRun, onSync, isActive, onFocus, listFil
             onCodeChange={handleCodeChange}
             onParameterChange={handleParameterChange}
             listFiles={listFiles}
+            getSymbols={getSymbols}
           />
           <div className={`cell-resize-handle ${isResizing ? 'cell-resize-handle--active' : ''}`} onMouseDown={handleResizeStart}>
             <div className="cell-resize-handle__grip" />
@@ -286,18 +290,19 @@ interface CellContentProps {
   onCodeChange: (code: string) => void;
   onParameterChange: (paramName: string, oldValue: string, newValue: string) => void;
   listFiles?: (dirPath?: string) => Promise<{ files: FileEntry[]; cwd: string }>;
+  getSymbols?: () => Promise<KernelSymbol[]>;
 }
 
-function CellContent({ activeTab, cell, contentHeight, onShortChange, onFullChange, onCodeChange, onParameterChange, listFiles }: CellContentProps) {
+function CellContent({ activeTab, cell, contentHeight, onShortChange, onFullChange, onCodeChange, onParameterChange, listFiles, getSymbols }: CellContentProps) {
   const editorHeight = contentHeight - 32;
 
   return (
     <div className="cell-content" style={{ minHeight: `${contentHeight}px` }}>
       {activeTab === 'short' && (
-        <DescriptionEditor content={cell.shortDescription} onChange={onShortChange} onParameterChange={onParameterChange} placeholder="Brief description of what this code does..." isSyncing={cell.isSyncing} minHeight={editorHeight} listFiles={listFiles} />
+        <DescriptionEditor content={cell.shortDescription} onChange={onShortChange} onParameterChange={onParameterChange} placeholder="Brief description of what this code does..." isSyncing={cell.isSyncing} minHeight={editorHeight} listFiles={listFiles} getSymbols={getSymbols} />
       )}
       {activeTab === 'full' && (
-        <DescriptionEditor content={cell.fullDescription} onChange={onFullChange} onParameterChange={onParameterChange} placeholder="Detailed explanation of the code in plain English..." isSyncing={cell.isSyncing} minHeight={editorHeight} listFiles={listFiles} />
+        <DescriptionEditor content={cell.fullDescription} onChange={onFullChange} onParameterChange={onParameterChange} placeholder="Detailed explanation of the code in plain English..." isSyncing={cell.isSyncing} minHeight={editorHeight} listFiles={listFiles} getSymbols={getSymbols} />
       )}
       {activeTab === 'code' && (
         <div className="cell-code-wrapper">

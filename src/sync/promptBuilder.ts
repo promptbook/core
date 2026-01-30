@@ -7,6 +7,20 @@ export interface CellContext {
   code: string;
 }
 
+/** Symbol info extracted from generated code */
+export interface GeneratedSymbol {
+  name: string;
+  kind: 'variable' | 'function';
+  type: string;
+  description: string;
+}
+
+/** Extended result from code generation that includes symbol metadata */
+export interface CodeGenerationResult {
+  code: string;
+  symbols: GeneratedSymbol[];
+}
+
 export interface AiSyncContext {
   newContent: string;
   previousContent?: string;
@@ -15,6 +29,8 @@ export interface AiSyncContext {
   cellsBefore?: CellContext[];
   /** Cells that come AFTER the current cell (in execution order) */
   cellsAfter?: CellContext[];
+  /** #mentions in the description that should be used as variable/function names */
+  proposedSymbols?: string[];
 }
 
 /**
@@ -73,12 +89,28 @@ export type SyncDirection =
   | 'codeToFull';
 
 /**
+ * Extract #mentions from description text
+ */
+export function extractHashMentions(text: string): string[] {
+  const regex = /#([a-zA-Z_][a-zA-Z0-9_]*)/g;
+  const mentions: string[] = [];
+  let match;
+  while ((match = regex.exec(text)) !== null) {
+    mentions.push(match[1]);
+  }
+  return [...new Set(mentions)]; // Remove duplicates
+}
+
+/**
  * Build a prompt for AI sync based on the direction and context.
  * Used by both Electron and VS Code extension.
  */
 export function buildSyncPrompt(direction: string, context: AiSyncContext): string {
-  const { newContent, previousContent, existingCounterpart, cellsBefore, cellsAfter } = context;
+  const { newContent, previousContent, existingCounterpart, cellsBefore, cellsAfter, proposedSymbols } = context;
   const cellsContext = formatCellsContext(cellsBefore, cellsAfter);
+
+  // Extract proposed symbols from #mentions in the description
+  const mentionedSymbols = proposedSymbols || extractHashMentions(newContent);
 
   // Handle expand/shorten instructions
   if (direction === 'expandInstructions') {
@@ -164,10 +196,33 @@ CRITICAL REQUIREMENTS:
 
 ` : '';
 
+    // Add proposed symbol names if any #mentions were found
+    const proposedNames = mentionedSymbols.length > 0 ? `
+PROPOSED NAMES (use these exact names for new variables/functions):
+${mentionedSymbols.map(s => `- ${s}`).join('\n')}
+When creating new variables or functions, use these names exactly as specified.
+
+` : '';
+
+    const structuredOutputInstructions = `
+OUTPUT FORMAT:
+Return your response as JSON with this exact structure:
+{
+  "code": "the python code here",
+  "symbols": [
+    {"name": "variable_name", "kind": "variable", "type": "DataFrame(100x5)", "description": "Brief description of what it contains"},
+    {"name": "function_name", "kind": "function", "type": "function_name(param1, param2)", "description": "Brief description of what it does"}
+  ]
+}
+
+The "symbols" array should list ALL new variables and functions defined in this cell (not imports or reused variables from earlier cells).
+For variables: include their type and a brief description of their contents.
+For functions: include their signature and a brief description of their purpose.`;
+
     if (hasExistingCode && hasChanges) {
       // Incremental update: instructions changed, update existing code
       return `You are updating Python code based on changed instructions.
-${notebookContext}
+${notebookContext}${proposedNames}
 PREVIOUS INSTRUCTIONS:
 ${previousContent}
 
@@ -180,12 +235,11 @@ ${existingCounterpart}
 \`\`\`
 
 Update the code to reflect the new instructions. Make MINIMAL changes - only modify what's necessary to implement the changes. Keep the code structure, variable names, and style consistent with the existing code unless the changes require otherwise.
-
-Return ONLY the updated Python code, no explanations or markdown.`;
+${structuredOutputInstructions}`;
     } else if (hasExistingCode) {
       // Existing code but no tracked changes - still use it as reference
       return `You are generating Python code for a task. There is existing code that may be relevant.
-${notebookContext}
+${notebookContext}${proposedNames}
 INSTRUCTIONS:
 ${newContent}
 
@@ -195,16 +249,14 @@ ${existingCounterpart}
 \`\`\`
 
 Generate code that implements the instructions. If the existing code is close to what's needed, make minimal modifications. Otherwise, write new code following the same coding style.
-
-Return ONLY the Python code, no explanations or markdown.`;
+${structuredOutputInstructions}`;
     } else {
       // Fresh generation
       return `Generate Python code for the following task. Write clean, efficient, and well-structured code.
-${notebookContext}
-Return ONLY the Python code, no explanations or markdown.
-
+${notebookContext}${proposedNames}
 TASK:
-${newContent}`;
+${newContent}
+${structuredOutputInstructions}`;
     }
   } else {
     // toInstructions - differentiate between short and full descriptions
