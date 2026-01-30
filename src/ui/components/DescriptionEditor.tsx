@@ -1,5 +1,6 @@
 import React, { useState, useMemo, useRef, useEffect } from 'react';
 import { Parameter } from '../../types/instructions';
+import { FileAutocomplete, FileEntry } from './FileAutocomplete';
 
 interface DescriptionEditorProps {
   content: string;
@@ -8,6 +9,8 @@ interface DescriptionEditorProps {
   placeholder?: string;
   isSyncing?: boolean;
   minHeight?: number;
+  /** Function to list files for @ autocomplete */
+  listFiles?: (dirPath?: string) => Promise<{ files: FileEntry[]; cwd: string }>;
 }
 
 interface ParsedDescription {
@@ -48,7 +51,7 @@ function updateParameterInText(originalText: string, paramName: string, oldValue
   return originalText.replace(regex, `{{${paramName}:${newValue}}}`);
 }
 
-export function DescriptionEditor({ content, onChange, onParameterChange, placeholder = 'Enter description...', isSyncing = false, minHeight }: DescriptionEditorProps) {
+export function DescriptionEditor({ content, onChange, onParameterChange, placeholder = 'Enter description...', isSyncing = false, minHeight, listFiles }: DescriptionEditorProps) {
   const [editingParamId, setEditingParamId] = useState<string | null>(null);
   const [editValue, setEditValue] = useState('');
   const [isEditingText, setIsEditingText] = useState(false);
@@ -108,7 +111,7 @@ export function DescriptionEditor({ content, onChange, onParameterChange, placeh
   return (
     <div className={`description-editor ${isSyncing ? 'description-editor--syncing' : ''}`}>
       {isEditingText ? (
-        <TextEditMode textareaRef={textareaRef} value={editingTextValue} onChange={setEditingTextValue} onBlur={handleTextSubmit} onKeyDown={handleTextKeyDown} placeholder={placeholder} minHeight={minHeight} />
+        <TextEditMode textareaRef={textareaRef} value={editingTextValue} onChange={setEditingTextValue} onBlur={handleTextSubmit} onKeyDown={handleTextKeyDown} placeholder={placeholder} minHeight={minHeight} listFiles={listFiles} />
       ) : (
         <div className="description-text description-text--editable" onClick={handleTextClick} title="Click to edit" style={heightStyle}>
           <TextWithParameters parsed={parsed} editingParamId={editingParamId} editValue={editValue} onEditValueChange={setEditValue} onParameterClick={handleParameterClick} onParameterSubmit={handleParameterSubmit} onParamKeyDown={handleParamKeyDown} placeholder={placeholder} />
@@ -127,23 +130,37 @@ interface TextEditModeProps {
   onKeyDown: (e: React.KeyboardEvent) => void;
   placeholder: string;
   minHeight?: number;
+  listFiles?: (dirPath?: string) => Promise<{ files: FileEntry[]; cwd: string }>;
 }
 
-function TextEditMode({ textareaRef, value, onChange, onBlur, onKeyDown, placeholder, minHeight }: TextEditModeProps) {
+function TextEditMode({ textareaRef, value, onChange, onBlur, onKeyDown, placeholder, minHeight, listFiles }: TextEditModeProps) {
   return (
     <div className="description-text-edit">
-      <textarea
-        ref={textareaRef}
-        value={value}
-        onChange={(e) => onChange(e.target.value)}
-        onBlur={onBlur}
-        onKeyDown={onKeyDown}
-        className="description-textarea"
-        placeholder={placeholder}
-        style={{ minHeight: minHeight ? `${minHeight}px` : undefined }}
-      />
+      {listFiles ? (
+        <FileAutocomplete
+          value={value}
+          onChange={onChange}
+          onBlur={onBlur}
+          onKeyDown={onKeyDown}
+          listFiles={listFiles}
+          placeholder={placeholder}
+          className="description-textarea"
+          textareaRef={textareaRef}
+        />
+      ) : (
+        <textarea
+          ref={textareaRef}
+          value={value}
+          onChange={(e) => onChange(e.target.value)}
+          onBlur={onBlur}
+          onKeyDown={onKeyDown}
+          className="description-textarea"
+          placeholder={placeholder}
+          style={{ minHeight: minHeight ? `${minHeight}px` : undefined }}
+        />
+      )}
       <div className="description-edit-hint">
-        Press <kbd>⌘</kbd>+<kbd>Enter</kbd> to save, <kbd>Esc</kbd> to cancel
+        Press <kbd>⌘</kbd>+<kbd>Enter</kbd> to save, <kbd>Esc</kbd> to cancel (type @ for file autocomplete)
       </div>
     </div>
   );
@@ -209,3 +226,4 @@ function TextWithParameters({ parsed, editingParamId, editValue, onEditValueChan
 
   return <>{parts.length > 0 ? parts : parsed.originalText}</>;
 }
+

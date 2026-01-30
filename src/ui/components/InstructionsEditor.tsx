@@ -1,5 +1,6 @@
 import React, { useState, useMemo, useRef, useEffect } from 'react';
 import { StructuredInstructions, Parameter } from '../../types';
+import { FileAutocomplete, FileEntry } from './FileAutocomplete';
 
 interface InstructionsEditorProps {
   instructions: StructuredInstructions | null;
@@ -13,6 +14,8 @@ interface InstructionsEditorProps {
   rawText?: string;
   isSyncing?: boolean;
   isEditable?: boolean;
+  /** Function to list files for @ autocomplete */
+  listFiles?: (dirPath?: string) => Promise<{ files: FileEntry[]; cwd: string }>;
 }
 
 interface ParsedInstruction {
@@ -43,7 +46,7 @@ function updateParameterInText(originalText: string, paramName: string, oldValue
   return originalText.replace(new RegExp(`\\{\\{${escapedName}:${escapedOldValue}\\}\\}`, 'g'), `{{${paramName}:${newValue}}}`);
 }
 
-export function InstructionsEditor({ instructions, onChange, onParameterUpdate, onRawInput, onExpand, onShorten, onParameterChange, isRawMode, rawText = '', isSyncing = false, isEditable = true }: InstructionsEditorProps) {
+export function InstructionsEditor({ instructions, onChange, onParameterUpdate, onRawInput, onExpand, onShorten, onParameterChange, isRawMode, rawText = '', isSyncing = false, isEditable = true, listFiles }: InstructionsEditorProps) {
   const [editingParamId, setEditingParamId] = useState<string | null>(null);
   const [editValue, setEditValue] = useState('');
   const [isEditingText, setIsEditingText] = useState(false);
@@ -63,7 +66,21 @@ export function InstructionsEditor({ instructions, onChange, onParameterUpdate, 
   }, [instructions?.text, instructions?.parameters]);
 
   if (isRawMode || !instructions) {
-    return <div className="instructions-editor instructions-editor--raw"><textarea value={rawText} onChange={(e) => onRawInput(e.target.value)} placeholder="Describe what you want to do..." rows={4} /></div>;
+    return (
+      <div className="instructions-editor instructions-editor--raw">
+        {listFiles ? (
+          <FileAutocomplete
+            value={rawText}
+            onChange={onRawInput}
+            listFiles={listFiles}
+            placeholder="Describe what you want to do... (type @ for file autocomplete)"
+            rows={4}
+          />
+        ) : (
+          <textarea value={rawText} onChange={(e) => onRawInput(e.target.value)} placeholder="Describe what you want to do..." rows={4} />
+        )}
+      </div>
+    );
   }
 
   const handleParameterClick = (e: React.MouseEvent, paramId: string, val: string) => { e.stopPropagation(); setEditingParamId(paramId); setEditValue(val); };
@@ -161,3 +178,4 @@ function ActionButtons({ onShorten, onExpand, isSyncing }: { onShorten?: () => v
     </div>
   );
 }
+

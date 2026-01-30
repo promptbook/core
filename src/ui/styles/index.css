@@ -5,6 +5,7 @@
 @import './kernel-status.css';
 @import './variable-inspector.css';
 @import './find-replace.css';
+@import './file-autocomplete.css';
 
 /* Typography - Geist for a modern, sophisticated feel */
 @import url('https://fonts.googleapis.com/css2?family=Geist:wght@300;400;500;600;700&family=Geist+Mono:wght@400;500;600&display=swap');

@@ -14,3 +14,5 @@ export { FindReplace } from './FindReplace';
 export type { SearchMatch } from './FindReplace';
 export { PackageInstallModal } from './PackageInstallModal';
 export type { InstallAction } from './PackageInstallModal';
+export { FileAutocomplete } from './FileAutocomplete';
+export type { FileEntry, FileAutocompleteProps } from './FileAutocomplete';
