@@ -9,11 +9,15 @@ interface CellProps {
   onUpdate: (cellId: string, updates: Partial<CellState>) => void;
   onRun: (cellId: string) => void;
   onSync: (cellId: string) => void;
+  onExpandInstructions?: (cellId: string) => void;
+  onShortenInstructions?: (cellId: string) => void;
+  isActive?: boolean;
+  onFocus?: (cellId: string) => void;
 }
 
 type TabType = 'instructions' | 'code';
 
-export function Cell({ cell, onUpdate, onRun, onSync }: CellProps) {
+export function Cell({ cell, onUpdate, onRun, onSync, onExpandInstructions, onShortenInstructions, isActive, onFocus }: CellProps) {
   const [activeTab, setActiveTab] = useState<TabType>('instructions');
   const [rawText, setRawText] = useState(cell.instructions?.text || '');
   const [isRawMode, setIsRawMode] = useState(!cell.instructions);
@@ -44,6 +48,14 @@ export function Cell({ cell, onUpdate, onRun, onSync }: CellProps) {
     });
   };
 
+  // Handle instructions change from parameter update - don't mark dirty
+  const handleInstructionsParameterUpdate = (instructions: StructuredInstructions) => {
+    onUpdate(cell.id, {
+      instructions,
+      // Don't set isDirty or lastEditedTab - this is just a parameter value update
+    });
+  };
+
   const handleCodeChange = (code: string) => {
     onUpdate(cell.id, {
       code,
@@ -62,8 +74,32 @@ export function Cell({ cell, onUpdate, onRun, onSync }: CellProps) {
     });
   };
 
+  // Handle parameter changes - update code directly without LLM
+  const handleParameterChange = (paramName: string, oldValue: string, newValue: string) => {
+    if (!cell.code) return;
+
+    // Replace the old value with the new value in the code
+    // This is a simple string replacement - works for most cases
+    const updatedCode = cell.code.replace(
+      new RegExp(oldValue.replace(/[.*+?^${}()|[\]\\]/g, '\\$&'), 'g'),
+      newValue
+    );
+
+    if (updatedCode !== cell.code) {
+      onUpdate(cell.id, {
+        code: updatedCode,
+        // Don't mark as dirty since this is a direct parameter update
+      });
+    }
+  };
+
   return (
-    <div className={`cell ${cell.isExecuting ? 'cell--executing' : ''} ${cell.isSyncing ? 'cell--syncing' : ''}`}>
+    <div
+      className={`cell ${cell.isExecuting ? 'cell--executing' : ''} ${cell.isSyncing ? 'cell--syncing' : ''} ${isActive ? 'cell--active' : ''}`}
+      onClick={() => onFocus?.(cell.id)}
+      tabIndex={0}
+      onFocus={() => onFocus?.(cell.id)}
+    >
       <div className="cell-toolbar">
         <div className="cell-tabs" role="tablist">
           <button
@@ -108,9 +144,14 @@ export function Cell({ cell, onUpdate, onRun, onSync }: CellProps) {
           <InstructionsEditor
             instructions={cell.instructions}
             onChange={handleInstructionsChange}
+            onParameterUpdate={handleInstructionsParameterUpdate}
             onRawInput={handleRawInput}
+            onExpand={onExpandInstructions ? () => onExpandInstructions(cell.id) : undefined}
+            onShorten={onShortenInstructions ? () => onShortenInstructions(cell.id) : undefined}
+            onParameterChange={handleParameterChange}
             isRawMode={isRawMode}
             rawText={rawText}
+            isSyncing={cell.isSyncing}
           />
         ) : (
           <div className="cell-code-wrapper">

@@ -17,6 +17,15 @@
   box-shadow: var(--pb-shadow-md);
 }
 
+.cell--active {
+  border-color: var(--pb-accent);
+  box-shadow: var(--pb-shadow-md), 0 0 0 1px var(--pb-accent-dim);
+}
+
+.cell--active:focus {
+  outline: none;
+}
+
 /* ─────────────────────────────────────────
    Executing State
    ───────────────────────────────────────── */

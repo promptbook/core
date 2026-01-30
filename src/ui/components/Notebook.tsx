@@ -9,6 +9,10 @@ interface NotebookProps {
   onSyncCell: (cellId: string) => void;
   onAddCell: (afterCellId?: string) => void;
   onDeleteCell: (cellId: string) => void;
+  onExpandInstructions?: (cellId: string) => void;
+  onShortenInstructions?: (cellId: string) => void;
+  activeCellId?: string;
+  onCellFocus?: (cellId: string) => void;
 }
 
 export function Notebook({
@@ -18,6 +22,10 @@ export function Notebook({
   onSyncCell,
   onAddCell,
   onDeleteCell,
+  onExpandInstructions,
+  onShortenInstructions,
+  activeCellId,
+  onCellFocus,
 }: NotebookProps) {
   if (notebook.cells.length === 0) {
     return (
@@ -39,6 +47,10 @@ export function Notebook({
             onUpdate={onUpdate}
             onRun={onRunCell}
             onSync={onSyncCell}
+            onExpandInstructions={onExpandInstructions}
+            onShortenInstructions={onShortenInstructions}
+            isActive={activeCellId === cell.id}
+            onFocus={onCellFocus}
           />
           <div className="cell-controls">
             <button

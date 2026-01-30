@@ -46,6 +46,76 @@
   padding: var(--pb-space-2) 0;
 }
 
+.instructions-text--editable {
+  cursor: text;
+  border-radius: var(--pb-radius-md);
+  padding: var(--pb-space-2);
+  margin: calc(-1 * var(--pb-space-2));
+  transition: all var(--pb-duration-fast) var(--pb-ease);
+}
+
+.instructions-text--editable:hover {
+  background: var(--pb-bg-secondary);
+}
+
+/* ─────────────────────────────────────────
+   Instructions Text Edit Mode
+   ───────────────────────────────────────── */
+
+.instructions-text-edit {
+  display: flex;
+  flex-direction: column;
+  gap: var(--pb-space-2);
+}
+
+.instructions-textarea {
+  width: 100%;
+  min-height: 120px;
+  padding: var(--pb-space-3);
+  font-family: var(--pb-font-sans);
+  font-size: var(--pb-text-base);
+  line-height: 1.7;
+  color: var(--pb-text-primary);
+  background: var(--pb-bg-secondary);
+  border: 2px solid var(--pb-accent);
+  border-radius: var(--pb-radius-lg);
+  resize: vertical;
+  transition: all var(--pb-duration-fast) var(--pb-ease);
+}
+
+.instructions-textarea:focus {
+  outline: none;
+  box-shadow: var(--pb-shadow-focus);
+}
+
+.instructions-textarea::placeholder {
+  color: var(--pb-text-tertiary);
+}
+
+.instructions-edit-hint {
+  display: flex;
+  align-items: center;
+  gap: var(--pb-space-1);
+  font-size: var(--pb-text-xs);
+  color: var(--pb-text-tertiary);
+}
+
+.instructions-edit-hint kbd {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 20px;
+  padding: var(--pb-space-0-5) var(--pb-space-1);
+  font-family: var(--pb-font-mono);
+  font-size: 10px;
+  font-weight: 500;
+  color: var(--pb-text-secondary);
+  background: var(--pb-bg-primary);
+  border: 1px solid var(--pb-border);
+  border-radius: var(--pb-radius-sm);
+  box-shadow: 0 1px 0 var(--pb-border);
+}
+
 /* ─────────────────────────────────────────
    Parameter Highlight Pills
    ───────────────────────────────────────── */
@@ -300,4 +370,116 @@
   font-size: var(--pb-text-xs);
   color: var(--pb-text-tertiary);
   margin-top: var(--pb-space-1);
+}
+
+/* ─────────────────────────────────────────
+   Instructions Content & Actions
+   ───────────────────────────────────────── */
+
+.instructions-content {
+  display: flex;
+  flex-direction: column;
+  gap: var(--pb-space-3);
+}
+
+.instructions-actions {
+  display: flex;
+  gap: var(--pb-space-2);
+  padding-top: var(--pb-space-2);
+  border-top: 1px solid var(--pb-border-subtle);
+}
+
+.instructions-action-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--pb-space-1);
+  padding: var(--pb-space-1) var(--pb-space-2);
+  font-size: var(--pb-text-xs);
+  font-weight: 500;
+  color: var(--pb-text-tertiary);
+  background: transparent;
+  border: 1px solid var(--pb-border);
+  border-radius: var(--pb-radius-md);
+  cursor: pointer;
+  transition: all var(--pb-duration-fast) var(--pb-ease);
+}
+
+.instructions-action-btn:hover:not(:disabled) {
+  color: var(--pb-text-secondary);
+  background: var(--pb-bg-hover);
+  border-color: var(--pb-border-strong);
+}
+
+.instructions-action-btn:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.instructions-action-btn svg {
+  opacity: 0.7;
+}
+
+/* ─────────────────────────────────────────
+   Inline Parameter Editing
+   ───────────────────────────────────────── */
+
+.parameter-inline {
+  display: inline-flex;
+  align-items: center;
+  margin: 0 var(--pb-space-0-5);
+  vertical-align: baseline;
+}
+
+.parameter-value {
+  display: inline-flex;
+  align-items: center;
+  padding: var(--pb-space-0-5) var(--pb-space-2);
+  font-family: var(--pb-font-mono);
+  font-size: var(--pb-text-sm);
+  font-weight: 600;
+  color: var(--pb-accent);
+  background: var(--pb-accent-dim);
+  border: 1px solid transparent;
+  border-radius: var(--pb-radius-md);
+  cursor: pointer;
+  transition: all var(--pb-duration-fast) var(--pb-ease);
+}
+
+.parameter-value:hover {
+  background: var(--pb-accent-subtle);
+  border-color: var(--pb-accent);
+}
+
+.parameter-inline--editing {
+  display: inline-flex;
+}
+
+.parameter-input {
+  width: auto;
+  min-width: 60px;
+  padding: var(--pb-space-0-5) var(--pb-space-2);
+  font-family: var(--pb-font-mono);
+  font-size: var(--pb-text-sm);
+  font-weight: 600;
+  color: var(--pb-accent);
+  background: var(--pb-bg-primary);
+  border: 2px solid var(--pb-accent);
+  border-radius: var(--pb-radius-md);
+  outline: none;
+}
+
+.parameter-input:focus {
+  box-shadow: var(--pb-shadow-focus);
+}
+
+/* Number input styling */
+.parameter-input[type="number"] {
+  width: 80px;
+  -moz-appearance: textfield;
+}
+
+.parameter-input[type="number"]::-webkit-outer-spin-button,
+.parameter-input[type="number"]::-webkit-inner-spin-button {
+  -webkit-appearance: none;
+  margin: 0;
 }
