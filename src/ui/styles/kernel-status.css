@@ -520,6 +520,221 @@
 }
 
 /* ============================================
+   Package Install Modal
+   ============================================ */
+
+.package-install-overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.5);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 1000;
+  animation: fadeIn var(--pb-duration-fast) var(--pb-ease-out);
+  backdrop-filter: blur(4px);
+}
+
+.package-install-modal {
+  background: var(--pb-bg-primary);
+  border: 1px solid var(--pb-border);
+  border-radius: var(--pb-radius-2xl);
+  box-shadow: var(--pb-shadow-xl);
+  width: 90%;
+  max-width: 480px;
+  max-height: 80vh;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  animation: fadeInScale var(--pb-duration-base) var(--pb-ease-out);
+}
+
+.package-install-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: var(--pb-space-5);
+  border-bottom: 1px solid var(--pb-border);
+}
+
+.package-install-header h2 {
+  margin: 0;
+  font-size: var(--pb-text-lg);
+  font-weight: 600;
+  color: var(--pb-text-primary);
+}
+
+.package-install-close {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 32px;
+  height: 32px;
+  padding: 0;
+  background: transparent;
+  border: none;
+  border-radius: var(--pb-radius-md);
+  cursor: pointer;
+  color: var(--pb-text-tertiary);
+  transition: all var(--pb-duration-fast) var(--pb-ease);
+}
+
+.package-install-close:hover {
+  background: var(--pb-bg-hover);
+  color: var(--pb-text-primary);
+}
+
+.package-install-close:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.package-install-content {
+  flex: 1;
+  overflow-y: auto;
+  padding: var(--pb-space-5);
+}
+
+.package-install-description {
+  margin: 0 0 var(--pb-space-4);
+  font-size: var(--pb-text-sm);
+  color: var(--pb-text-secondary);
+}
+
+.package-install-list {
+  display: flex;
+  flex-direction: column;
+  gap: var(--pb-space-3);
+}
+
+.package-install-item {
+  display: flex;
+  flex-direction: column;
+  gap: var(--pb-space-1);
+}
+
+.package-install-item-row {
+  display: flex;
+  align-items: center;
+  gap: var(--pb-space-3);
+}
+
+.package-install-input {
+  flex: 1;
+  padding: var(--pb-space-2-5) var(--pb-space-3);
+  font-family: var(--pb-font-mono);
+  font-size: var(--pb-text-sm);
+  color: var(--pb-text-primary);
+  background: var(--pb-bg-secondary);
+  border: 1px solid var(--pb-border);
+  border-radius: var(--pb-radius-md);
+  transition: all var(--pb-duration-fast) var(--pb-ease);
+}
+
+.package-install-input:focus {
+  outline: none;
+  border-color: var(--pb-accent);
+  box-shadow: var(--pb-shadow-focus);
+}
+
+.package-install-input--invalid {
+  border-color: var(--pb-error);
+}
+
+.package-install-input--invalid:focus {
+  border-color: var(--pb-error);
+  box-shadow: 0 0 0 2px var(--pb-error-dim);
+}
+
+.package-install-hint {
+  font-size: var(--pb-text-xs);
+  color: var(--pb-text-tertiary);
+  white-space: nowrap;
+}
+
+.package-install-error-hint {
+  font-size: var(--pb-text-xs);
+  color: var(--pb-error);
+}
+
+.package-install-loading {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: var(--pb-space-4);
+  padding: var(--pb-space-10);
+  color: var(--pb-text-secondary);
+}
+
+.package-install-spinner {
+  width: 32px;
+  height: 32px;
+  border: 3px solid var(--pb-border);
+  border-top-color: var(--pb-accent);
+  border-radius: var(--pb-radius-full);
+  animation: spin 0.8s linear infinite;
+}
+
+.package-install-error {
+  margin-top: var(--pb-space-4);
+  padding: var(--pb-space-3);
+  font-size: var(--pb-text-sm);
+  color: var(--pb-error);
+  background: var(--pb-error-dim);
+  border-radius: var(--pb-radius-md);
+}
+
+.package-install-footer {
+  padding: var(--pb-space-4) var(--pb-space-5);
+  border-top: 1px solid var(--pb-border);
+  background: var(--pb-bg-secondary);
+}
+
+.package-install-actions {
+  display: flex;
+  gap: var(--pb-space-2);
+  justify-content: flex-end;
+  flex-wrap: wrap;
+}
+
+.package-install-btn {
+  padding: var(--pb-space-2) var(--pb-space-4);
+  font-size: var(--pb-text-sm);
+  font-weight: 500;
+  border-radius: var(--pb-radius-md);
+  cursor: pointer;
+  transition: all var(--pb-duration-fast) var(--pb-ease);
+}
+
+.package-install-btn:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.package-install-btn--secondary {
+  color: var(--pb-text-secondary);
+  background: transparent;
+  border: 1px solid var(--pb-border);
+}
+
+.package-install-btn--secondary:hover:not(:disabled) {
+  background: var(--pb-bg-hover);
+  color: var(--pb-text-primary);
+  border-color: var(--pb-border-strong);
+}
+
+.package-install-btn--primary {
+  color: white;
+  background: var(--pb-accent);
+  border: none;
+}
+
+.package-install-btn--primary:hover:not(:disabled) {
+  background: var(--pb-accent-hover);
+}
+
+/* ============================================
    Rich Output Enhancements
    ============================================ */
 

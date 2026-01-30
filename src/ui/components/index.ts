@@ -12,3 +12,5 @@ export { VariableInspector } from './VariableInspector';
 export type { Variable } from './VariableInspector';
 export { FindReplace } from './FindReplace';
 export type { SearchMatch } from './FindReplace';
+export { PackageInstallModal } from './PackageInstallModal';
+export type { InstallAction } from './PackageInstallModal';

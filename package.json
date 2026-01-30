@@ -21,6 +21,10 @@
       "import": "./dist/kernel/index.js",
       "types": "./dist/kernel/index.d.ts"
     },
+    "./utils": {
+      "import": "./dist/utils/index.js",
+      "types": "./dist/utils/index.d.ts"
+    },
     "./styles": "./src/ui/styles/index.css"
   },
   "scripts": {
