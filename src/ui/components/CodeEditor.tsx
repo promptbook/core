@@ -5,6 +5,7 @@ interface CodeEditorProps {
   code: string;
   onChange: (code: string) => void;
   readOnly: boolean;
+  height?: number;
 }
 
 // Detect system dark mode
@@ -93,13 +94,13 @@ loader.init().then((monaco) => {
   });
 });
 
-export function CodeEditor({ code, onChange, readOnly }: CodeEditorProps) {
+export function CodeEditor({ code, onChange, readOnly, height = 250 }: CodeEditorProps) {
   const isDark = useSystemTheme();
 
   return (
     <div className="code-editor">
       <Editor
-        height="250px"
+        height={`${height}px`}
         language="python"
         theme={isDark ? 'vs-dark' : 'light'}
         value={code}

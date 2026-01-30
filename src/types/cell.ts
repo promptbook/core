@@ -1,6 +1,9 @@
 import { StructuredInstructions } from './instructions';
 
 export type CellOutputType = 'stdout' | 'stderr' | 'result' | 'display' | 'error';
+export type CellType = 'code' | 'text';
+export type TextFormat = 'markdown' | 'html';
+export type CodeCellTab = 'short' | 'full' | 'code';
 
 export interface CellOutput {
   type: CellOutputType;
@@ -10,29 +13,63 @@ export interface CellOutput {
 
 export interface CellState {
   id: string;
-  instructions: StructuredInstructions | null;
+  cellType: CellType;
+
+  // For code cells - three synced representations
+  shortDescription: string; // Brief summary with params
+  fullDescription: string;  // Detailed explanation with params
   code: string;
+
+  // For text cells
+  textContent: string;
+  textFormat: TextFormat;
+
+  // Legacy field for backward compatibility
+  instructions: StructuredInstructions | null;
+
   outputs: CellOutput[];
-  lastEditedTab: 'instructions' | 'code';
+  lastEditedTab: CodeCellTab;
   isDirty: boolean;
   isExecuting: boolean;
   isSyncing: boolean;
+
   // Cache for incremental sync - tracks what was last synced
-  lastSyncedInstructions?: string;
+  lastSyncedShort?: string;
+  lastSyncedFull?: string;
   lastSyncedCode?: string;
+
+  // Cell height (for resizable cells)
+  height?: number;
 }
 
-export function createEmptyCell(id: string): CellState {
+export function createEmptyCell(id: string, cellType: CellType = 'code'): CellState {
   return {
     id,
-    instructions: null,
+    cellType,
+    shortDescription: '',
+    fullDescription: '',
     code: '',
+    textContent: '',
+    textFormat: 'markdown',
+    instructions: null,
     outputs: [],
-    lastEditedTab: 'instructions',
+    lastEditedTab: 'short',
     isDirty: false,
     isExecuting: false,
     isSyncing: false,
-    lastSyncedInstructions: undefined,
+    lastSyncedShort: undefined,
+    lastSyncedFull: undefined,
     lastSyncedCode: undefined,
+    height: undefined,
   };
+}
+
+export function createCodeCell(id: string): CellState {
+  return createEmptyCell(id, 'code');
+}
+
+export function createTextCell(id: string, format: TextFormat = 'markdown'): CellState {
+  const cell = createEmptyCell(id, 'text');
+  cell.textFormat = format;
+  return cell;
 }

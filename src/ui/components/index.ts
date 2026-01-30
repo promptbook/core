@@ -1,6 +1,8 @@
 export { Notebook } from './Notebook';
 export { Cell } from './Cell';
+export { TextCell } from './TextCell';
 export { InstructionsEditor } from './InstructionsEditor';
+export { DescriptionEditor } from './DescriptionEditor';
 export { CodeEditor } from './CodeEditor';
 export { ParameterControls } from './ParameterControls';
 export { OutputArea } from './OutputArea';

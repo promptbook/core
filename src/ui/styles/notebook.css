@@ -3,7 +3,8 @@
    ============================================ */
 
 .notebook {
-  max-width: 900px;
+  width: 80%;
+  max-width: 1400px;
   margin: 0 auto;
   padding: var(--pb-space-8) var(--pb-space-6);
   animation: fadeInUp var(--pb-duration-slow) var(--pb-ease-out);
@@ -130,8 +131,7 @@
   transform: translateX(0);
 }
 
-.cell-delete,
-.cell-add-below {
+.cell-control-btn {
   display: flex;
   align-items: center;
   justify-content: center;
@@ -146,10 +146,15 @@
   box-shadow: var(--pb-shadow-xs);
 }
 
-.cell-delete svg,
-.cell-add-below svg {
+.cell-control-btn svg {
   width: 14px;
   height: 14px;
+}
+
+.cell-control-btn:hover {
+  color: var(--pb-text-primary);
+  background: var(--pb-bg-hover);
+  border-color: var(--pb-border-strong);
 }
 
 .cell-delete:hover {
@@ -158,10 +163,18 @@
   border-color: var(--pb-error);
 }
 
-.cell-add-below:hover {
+.cell-add-code:hover,
+.cell-add-text:hover {
   color: var(--pb-accent);
   background: var(--pb-accent-dim);
   border-color: var(--pb-accent);
+}
+
+.cell-move-up:hover,
+.cell-move-down:hover {
+  color: var(--pb-info);
+  background: var(--pb-info-dim);
+  border-color: var(--pb-info);
 }
 
 /* ─────────────────────────────────────────
@@ -171,6 +184,7 @@
 .notebook-footer {
   display: flex;
   justify-content: center;
+  gap: var(--pb-space-3);
   padding: var(--pb-space-8) 0;
 }
 
@@ -196,6 +210,44 @@
 }
 
 .notebook-footer button svg {
+  width: 16px;
+  height: 16px;
+}
+
+/* Empty state actions */
+.notebook-empty-actions {
+  display: flex;
+  gap: var(--pb-space-3);
+}
+
+.notebook-empty-actions button {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--pb-space-2);
+  padding: var(--pb-space-3) var(--pb-space-5);
+  font-size: var(--pb-text-sm);
+  font-weight: 600;
+  color: white;
+  background: var(--pb-accent);
+  border: none;
+  border-radius: var(--pb-radius-lg);
+  box-shadow: var(--pb-shadow-md);
+  cursor: pointer;
+  transition: all var(--pb-duration-fast) var(--pb-ease);
+}
+
+.notebook-empty-actions button:hover {
+  background: var(--pb-accent-hover);
+  box-shadow: var(--pb-shadow-lg);
+  transform: translateY(-2px);
+}
+
+.notebook-empty-actions button:active {
+  transform: translateY(0);
+  box-shadow: var(--pb-shadow-sm);
+}
+
+.notebook-empty-actions button svg {
   width: 16px;
   height: 16px;
 }
