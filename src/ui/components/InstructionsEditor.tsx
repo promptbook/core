@@ -66,7 +66,7 @@ export function InstructionsEditor({ instructions, onChange, onParameterUpdate, 
     return <div className="instructions-editor instructions-editor--raw"><textarea value={rawText} onChange={(e) => onRawInput(e.target.value)} placeholder="Describe what you want to do..." rows={4} /></div>;
   }
 
-  const handleParameterClick = (paramId: string, val: string) => { setEditingParamId(paramId); setEditValue(val); };
+  const handleParameterClick = (e: React.MouseEvent, paramId: string, val: string) => { e.stopPropagation(); setEditingParamId(paramId); setEditValue(val); };
 
   const handleParameterSubmit = (paramId: string) => {
     const param = parsed.params.find((p) => p.id === paramId);
@@ -112,7 +112,7 @@ function TextEditView({ textareaRef, value, onChange, onBlur, onKeyDown }: { tex
 
 interface TextWithParamsProps {
   parsed: ParsedInstruction; editingParamId: string | null; editValue: string; setEditValue: (v: string) => void;
-  onParameterClick: (id: string, val: string) => void; onParameterSubmit: (id: string) => void; onKeyDown: (e: React.KeyboardEvent, id: string) => void;
+  onParameterClick: (e: React.MouseEvent, id: string, val: string) => void; onParameterSubmit: (id: string) => void; onKeyDown: (e: React.KeyboardEvent, id: string) => void;
   fallbackText: string;
 }
 
@@ -133,7 +133,7 @@ function TextWithParams({ parsed, editingParamId, editValue, setEditValue, onPar
           {isEditing ? (
             <input type={param.type === 'number' ? 'number' : 'text'} value={editValue} onChange={(e) => setEditValue(e.target.value)} onBlur={() => onParameterSubmit(paramId)} onKeyDown={(e) => onKeyDown(e, paramId)} autoFocus className="parameter-input" />
           ) : (
-            <span className="parameter-value" onClick={() => onParameterClick(paramId, param.value)} title={`Click to edit ${param.name}`}>{param.value}</span>
+            <span className="parameter-value" onClick={(e) => onParameterClick(e, paramId, param.value)} title={`Click to edit ${param.name}`}>{param.value}</span>
           )}
         </span>
       );

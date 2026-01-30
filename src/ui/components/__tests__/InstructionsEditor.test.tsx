@@ -23,9 +23,9 @@ describe('InstructionsEditor', () => {
       />
     );
 
-    expect(screen.getByText('data.csv')).toHaveClass('parameter-highlight');
-    expect(screen.getByText('revenue')).toHaveClass('parameter-highlight');
-    expect(screen.getByText('100')).toHaveClass('parameter-highlight');
+    expect(screen.getByText('data.csv')).toHaveClass('parameter-value');
+    expect(screen.getByText('revenue')).toHaveClass('parameter-value');
+    expect(screen.getByText('100')).toHaveClass('parameter-value');
   });
 
   it('shows raw text input when in raw mode', () => {
@@ -43,7 +43,7 @@ describe('InstructionsEditor', () => {
     expect(screen.getByDisplayValue('Load some data')).toBeInTheDocument();
   });
 
-  it('opens parameter control popup when clicking highlighted parameter', () => {
+  it('opens inline input when clicking parameter value', () => {
     render(
       <InstructionsEditor
         instructions={mockInstructions}
@@ -55,6 +55,7 @@ describe('InstructionsEditor', () => {
 
     fireEvent.click(screen.getByText('100'));
 
-    expect(screen.getByRole('slider')).toBeInTheDocument();
+    // Clicking a number parameter opens an inline number input
+    expect(screen.getByRole('spinbutton')).toBeInTheDocument();
   });
 });
