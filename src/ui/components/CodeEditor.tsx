@@ -116,7 +116,7 @@ export function CodeEditor({ code, onChange, readOnly }: CodeEditorProps) {
           tabSize: 4,
           wordWrap: 'on',
           padding: { top: 12, bottom: 12 },
-          renderLineHighlight: 'all',
+          renderLineHighlight: 'none',
           cursorBlinking: 'smooth',
           cursorSmoothCaretAnimation: 'on',
           smoothScrolling: true,
