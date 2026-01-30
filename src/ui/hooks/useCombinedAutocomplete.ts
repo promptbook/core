@@ -15,6 +15,12 @@ export interface AutocompleteItem {
   path?: string;
 }
 
+export interface DropdownPosition {
+  top: number;
+  left: number;
+  width: number;
+}
+
 interface UseCombinedAutocompleteOptions {
   value: string;
   onChange: (value: string) => void;
@@ -55,6 +61,16 @@ function isValidTriggerPosition(str: string, cursorPos: number): boolean {
   return charBeforeThat === ' ' || charBeforeThat === '\n';
 }
 
+// Calculate dropdown position based on textarea
+function calculateDropdownPosition(textarea: HTMLTextAreaElement): DropdownPosition {
+  const rect = textarea.getBoundingClientRect();
+  return {
+    top: rect.bottom + 4, // 4px gap below textarea
+    left: rect.left,
+    width: rect.width,
+  };
+}
+
 export function useCombinedAutocomplete({
   value,
   onChange,
@@ -69,6 +85,7 @@ export function useCombinedAutocomplete({
   const [filterText, setFilterText] = useState('');
   const [currentDir, setCurrentDir] = useState('');
   const [isLoading, setIsLoading] = useState(false);
+  const [dropdownPosition, setDropdownPosition] = useState<DropdownPosition>({ top: 0, left: 0, width: 300 });
   const dropdownRef = useRef<HTMLDivElement>(null);
 
   // Filter items based on what user typed
@@ -83,6 +100,13 @@ export function useCombinedAutocomplete({
     !items.some(item => item.label.toLowerCase() === filterText.toLowerCase());
 
   const totalItems = filteredItems.length + (showCreateOption ? 1 : 0);
+
+  // Update dropdown position when mode changes
+  useEffect(() => {
+    if (mode !== 'none' && textareaRef.current) {
+      setDropdownPosition(calculateDropdownPosition(textareaRef.current));
+    }
+  }, [mode, textareaRef]);
 
   // Load files
   const loadFiles = useCallback(async (dir?: string) => {
@@ -175,6 +199,9 @@ export function useCombinedAutocomplete({
         setFilterText('');
         setSelectedIndex(0);
         setCurrentDir('');
+        if (textareaRef.current) {
+          setDropdownPosition(calculateDropdownPosition(textareaRef.current));
+        }
         loadFiles();
         return;
       }
@@ -184,6 +211,9 @@ export function useCombinedAutocomplete({
         setTriggerPosition(cursorPos);
         setFilterText('');
         setSelectedIndex(0);
+        if (textareaRef.current) {
+          setDropdownPosition(calculateDropdownPosition(textareaRef.current));
+        }
         loadSymbols();
         return;
       }
@@ -197,7 +227,7 @@ export function useCombinedAutocomplete({
         setFilterText(textAfterTrigger);
       }
     }
-  }, [onChange, listFiles, getSymbols, mode, triggerPosition, loadFiles, loadSymbols]);
+  }, [onChange, listFiles, getSymbols, mode, triggerPosition, loadFiles, loadSymbols, textareaRef]);
 
   // Handle keyboard events
   const handleKeyDown = useCallback((e: React.KeyboardEvent<HTMLTextAreaElement>, externalHandler?: (e: React.KeyboardEvent) => void) => {
@@ -269,6 +299,7 @@ export function useCombinedAutocomplete({
     showCreateOption,
     totalItems,
     dropdownRef,
+    dropdownPosition,
     handleChange,
     handleKeyDown,
     selectItem,

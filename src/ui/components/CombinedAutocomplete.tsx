@@ -1,7 +1,8 @@
 import React, { useRef } from 'react';
+import { createPortal } from 'react-dom';
 import type { FileEntry } from './FileAutocomplete';
 import type { KernelSymbol } from './SymbolAutocomplete';
-import { useCombinedAutocomplete, type AutocompleteItem } from '../hooks/useCombinedAutocomplete';
+import { useCombinedAutocomplete, type AutocompleteItem, type DropdownPosition } from '../hooks/useCombinedAutocomplete';
 
 export interface CombinedAutocompleteProps {
   /** The current text value */
@@ -49,6 +50,26 @@ export function CombinedAutocomplete({
     textareaRef: textareaRefToUse,
   });
 
+  // Render dropdown in a portal to escape overflow:hidden containers
+  const dropdown = autocomplete.mode !== 'none' && createPortal(
+    <AutocompleteDropdown
+      dropdownRef={autocomplete.dropdownRef}
+      mode={autocomplete.mode}
+      position={autocomplete.dropdownPosition}
+      currentDir={autocomplete.currentDir}
+      isLoading={autocomplete.isLoading}
+      totalItems={autocomplete.totalItems}
+      filteredItems={autocomplete.items}
+      selectedIndex={autocomplete.selectedIndex}
+      filterText={autocomplete.filterText}
+      showCreateOption={autocomplete.showCreateOption}
+      onSelectItem={autocomplete.selectItem}
+      onSelectNewSymbol={autocomplete.insertNewSymbol}
+      onHoverItem={autocomplete.setSelectedIndex}
+    />,
+    document.body
+  );
+
   return (
     <div className="combined-autocomplete-container">
       <textarea
@@ -61,30 +82,16 @@ export function CombinedAutocomplete({
         className={className}
         rows={rows}
       />
-      {autocomplete.mode !== 'none' && (
-        <AutocompleteDropdown
-          dropdownRef={autocomplete.dropdownRef}
-          mode={autocomplete.mode}
-          currentDir={autocomplete.currentDir}
-          isLoading={autocomplete.isLoading}
-          totalItems={autocomplete.totalItems}
-          filteredItems={autocomplete.items}
-          selectedIndex={autocomplete.selectedIndex}
-          filterText={autocomplete.filterText}
-          showCreateOption={autocomplete.showCreateOption}
-          onSelectItem={autocomplete.selectItem}
-          onSelectNewSymbol={autocomplete.insertNewSymbol}
-          onHoverItem={autocomplete.setSelectedIndex}
-        />
-      )}
+      {dropdown}
     </div>
   );
 }
 
-// Dropdown component
+// Dropdown component with fixed positioning
 interface AutocompleteDropdownProps {
   dropdownRef: React.RefObject<HTMLDivElement>;
   mode: 'file' | 'symbol';
+  position: DropdownPosition;
   currentDir: string;
   isLoading: boolean;
   totalItems: number;
@@ -100,6 +107,7 @@ interface AutocompleteDropdownProps {
 function AutocompleteDropdown({
   dropdownRef,
   mode,
+  position,
   currentDir,
   isLoading,
   totalItems,
@@ -111,8 +119,16 @@ function AutocompleteDropdown({
   onSelectNewSymbol,
   onHoverItem,
 }: AutocompleteDropdownProps) {
+  const style: React.CSSProperties = {
+    position: 'fixed',
+    top: position.top,
+    left: position.left,
+    width: position.width,
+    zIndex: 10000,
+  };
+
   return (
-    <div ref={dropdownRef} className="combined-autocomplete-dropdown">
+    <div ref={dropdownRef} className="combined-autocomplete-dropdown" style={style}>
       {mode === 'file' && currentDir && (
         <div className="autocomplete-header">{currentDir}</div>
       )}
