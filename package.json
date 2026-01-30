@@ -7,22 +7,27 @@
   "exports": {
     ".": {
       "import": "./dist/index.js",
+      "require": "./dist/index.js",
       "types": "./dist/index.d.ts"
     },
     "./ui": {
       "import": "./dist/ui/index.js",
+      "require": "./dist/ui/index.js",
       "types": "./dist/ui/index.d.ts"
     },
     "./sync": {
       "import": "./dist/sync/index.js",
+      "require": "./dist/sync/index.js",
       "types": "./dist/sync/index.d.ts"
     },
     "./kernel": {
       "import": "./dist/kernel/index.js",
+      "require": "./dist/kernel/index.js",
       "types": "./dist/kernel/index.d.ts"
     },
     "./utils": {
       "import": "./dist/utils/index.js",
+      "require": "./dist/utils/index.js",
       "types": "./dist/utils/index.d.ts"
     },
     "./styles": "./src/ui/styles/index.css"
