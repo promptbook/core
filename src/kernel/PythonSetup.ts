@@ -187,6 +187,78 @@ export class PythonSetup {
     });
   }
 
+  private async discoverCondaEnvironments(
+    addEnv: (pythonPath: string, name: string, type: EnvironmentType) => Promise<void>
+  ): Promise<void> {
+    const condaDirs = [
+      path.join(os.homedir(), 'anaconda3', 'envs'),
+      path.join(os.homedir(), 'miniconda3', 'envs'),
+      path.join(os.homedir(), 'miniforge3', 'envs'),
+      path.join(os.homedir(), 'mambaforge', 'envs'),
+    ];
+    if (process.env.CONDA_PREFIX) {
+      condaDirs.unshift(path.join(process.env.CONDA_PREFIX, '..'));
+    }
+
+    for (const condaEnvsDir of condaDirs) {
+      if (await directoryExists(condaEnvsDir)) {
+        try {
+          const envs = await fs.readdir(condaEnvsDir);
+          for (const envName of envs) {
+            const envDir = path.join(condaEnvsDir, envName);
+            const pythonPath = await findPythonInDir(envDir);
+            if (pythonPath) {
+              await addEnv(pythonPath, `conda: ${envName}`, 'conda');
+            }
+          }
+        } catch { /* ignore */ }
+      }
+    }
+
+    // Also check conda base environments
+    const condaBaseDirs = [
+      path.join(os.homedir(), 'anaconda3'),
+      path.join(os.homedir(), 'miniconda3'),
+      path.join(os.homedir(), 'miniforge3'),
+      path.join(os.homedir(), 'mambaforge'),
+    ];
+    for (const baseDir of condaBaseDirs) {
+      const pythonPath = await findPythonInDir(baseDir);
+      if (pythonPath) {
+        const baseName = path.basename(baseDir);
+        await addEnv(pythonPath, `conda: ${baseName} (base)`, 'conda');
+      }
+    }
+  }
+
+  private async discoverSystemPython(
+    addEnv: (pythonPath: string, name: string, type: EnvironmentType) => Promise<void>
+  ): Promise<void> {
+    const systemPythons = process.platform === 'win32'
+      ? ['python', 'python3']
+      : ['python3', '/usr/bin/python3', '/usr/local/bin/python3'];
+
+    for (const pythonCmd of systemPythons) {
+      try {
+        const whichCmd = process.platform === 'win32' ? 'where' : 'which';
+        const result = await new Promise<string>((resolve, reject) => {
+          const proc = spawn(whichCmd, [pythonCmd], { timeout: 5000 });
+          let stdout = '';
+          proc.stdout.on('data', (data) => { stdout += data.toString(); });
+          proc.on('close', (code) => {
+            if (code === 0) resolve(stdout.trim().split('\n')[0]);
+            else reject(new Error('not found'));
+          });
+          proc.on('error', reject);
+        });
+        if (result) {
+          await addEnv(result, 'System Python', 'system');
+          break; // Only add one system Python
+        }
+      } catch { /* ignore */ }
+    }
+  }
+
   async discoverEnvironments(): Promise<PythonEnvironment[]> {
     const environments: PythonEnvironment[] = [];
     const seen = new Set<string>();
@@ -235,45 +307,7 @@ export class PythonSetup {
     }
 
     // 3. Conda environments
-    const condaDirs = [
-      path.join(os.homedir(), 'anaconda3', 'envs'),
-      path.join(os.homedir(), 'miniconda3', 'envs'),
-      path.join(os.homedir(), 'miniforge3', 'envs'),
-      path.join(os.homedir(), 'mambaforge', 'envs'),
-    ];
-    if (process.env.CONDA_PREFIX) {
-      condaDirs.unshift(path.join(process.env.CONDA_PREFIX, '..'));
-    }
-
-    for (const condaEnvsDir of condaDirs) {
-      if (await directoryExists(condaEnvsDir)) {
-        try {
-          const envs = await fs.readdir(condaEnvsDir);
-          for (const envName of envs) {
-            const envDir = path.join(condaEnvsDir, envName);
-            const pythonPath = await findPythonInDir(envDir);
-            if (pythonPath) {
-              await addEnv(pythonPath, `conda: ${envName}`, 'conda');
-            }
-          }
-        } catch { /* ignore */ }
-      }
-    }
-
-    // Also check conda base environments
-    const condaBaseDirs = [
-      path.join(os.homedir(), 'anaconda3'),
-      path.join(os.homedir(), 'miniconda3'),
-      path.join(os.homedir(), 'miniforge3'),
-      path.join(os.homedir(), 'mambaforge'),
-    ];
-    for (const baseDir of condaBaseDirs) {
-      const pythonPath = await findPythonInDir(baseDir);
-      if (pythonPath) {
-        const baseName = path.basename(baseDir);
-        await addEnv(pythonPath, `conda: ${baseName} (base)`, 'conda');
-      }
-    }
+    await this.discoverCondaEnvironments(addEnv);
 
     // 4. pipenv environments
     const pipenvDir = path.join(os.homedir(), '.local', 'share', 'virtualenvs');
@@ -291,30 +325,7 @@ export class PythonSetup {
     }
 
     // 5. System Python
-    const systemPythons = process.platform === 'win32'
-      ? ['python', 'python3']
-      : ['python3', '/usr/bin/python3', '/usr/local/bin/python3'];
-
-    for (const pythonCmd of systemPythons) {
-      try {
-        // Use 'which' or 'where' to find the actual path
-        const whichCmd = process.platform === 'win32' ? 'where' : 'which';
-        const result = await new Promise<string>((resolve, reject) => {
-          const proc = spawn(whichCmd, [pythonCmd], { timeout: 5000 });
-          let stdout = '';
-          proc.stdout.on('data', (data) => { stdout += data.toString(); });
-          proc.on('close', (code) => {
-            if (code === 0) resolve(stdout.trim().split('\n')[0]);
-            else reject(new Error('not found'));
-          });
-          proc.on('error', reject);
-        });
-        if (result) {
-          await addEnv(result, 'System Python', 'system');
-          break; // Only add one system Python
-        }
-      } catch { /* ignore */ }
-    }
+    await this.discoverSystemPython(addEnv);
 
     return environments;
   }

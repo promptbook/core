@@ -15,6 +15,80 @@ interface PackageInstallModalProps {
   installError?: string | null;
 }
 
+/** Single package input row with validation */
+function PackageInputRow({
+  pkg,
+  currentValue,
+  onEdit,
+}: {
+  pkg: MissingPackage;
+  currentValue: string;
+  onEdit: (importName: string, newValue: string) => void;
+}) {
+  const showHint = pkg.packageName !== pkg.importName;
+  const isValid = isValidPackageName(currentValue.trim());
+
+  return (
+    <div className="package-install-item">
+      <div className="package-install-item-row">
+        <input
+          type="text"
+          value={currentValue}
+          onChange={e => onEdit(pkg.importName, e.target.value)}
+          className={`package-install-input ${!isValid && currentValue ? 'package-install-input--invalid' : ''}`}
+          placeholder="Package name"
+        />
+        {showHint && (
+          <span className="package-install-hint">(import: {pkg.importName})</span>
+        )}
+      </div>
+      {!isValid && currentValue && (
+        <span className="package-install-error-hint">Invalid package name</span>
+      )}
+    </div>
+  );
+}
+
+/** Action buttons for installing packages */
+function InstallActions({
+  onInstall,
+  hasValidPackages,
+}: {
+  onInstall: (action: InstallAction) => void;
+  hasValidPackages: boolean;
+}) {
+  return (
+    <footer className="package-install-footer">
+      <div className="package-install-actions">
+        <button
+          onClick={() => onInstall('once')}
+          className="package-install-btn package-install-btn--secondary"
+          disabled={!hasValidPackages}
+          title="Install packages in the current kernel session (won't persist after restart)"
+        >
+          Install Once
+        </button>
+        <button
+          onClick={() => onInstall('current-cell')}
+          className="package-install-btn package-install-btn--secondary"
+          disabled={!hasValidPackages}
+          title="Add !pip install to the beginning of this cell"
+        >
+          Add to This Cell
+        </button>
+        <button
+          onClick={() => onInstall('setup-cell')}
+          className="package-install-btn package-install-btn--primary"
+          disabled={!hasValidPackages}
+          title="Add to a setup cell at the top of the notebook (recommended)"
+        >
+          Add to Setup Cell
+        </button>
+      </div>
+    </footer>
+  );
+}
+
 export function PackageInstallModal({
   isOpen,
   onClose,
@@ -85,33 +159,14 @@ export function PackageInstallModal({
               </p>
 
               <div className="package-install-list">
-                {packages.map(pkg => {
-                  const showHint = pkg.packageName !== pkg.importName;
-                  const currentValue = editedPackages[pkg.importName] || pkg.packageName;
-                  const isValid = isValidPackageName(currentValue.trim());
-
-                  return (
-                    <div key={pkg.importName} className="package-install-item">
-                      <div className="package-install-item-row">
-                        <input
-                          type="text"
-                          value={currentValue}
-                          onChange={e => handlePackageEdit(pkg.importName, e.target.value)}
-                          className={`package-install-input ${!isValid && currentValue ? 'package-install-input--invalid' : ''}`}
-                          placeholder="Package name"
-                        />
-                        {showHint && (
-                          <span className="package-install-hint">
-                            (import: {pkg.importName})
-                          </span>
-                        )}
-                      </div>
-                      {!isValid && currentValue && (
-                        <span className="package-install-error-hint">Invalid package name</span>
-                      )}
-                    </div>
-                  );
-                })}
+                {packages.map(pkg => (
+                  <PackageInputRow
+                    key={pkg.importName}
+                    pkg={pkg}
+                    currentValue={editedPackages[pkg.importName] || pkg.packageName}
+                    onEdit={handlePackageEdit}
+                  />
+                ))}
               </div>
 
               {installError && (
@@ -124,34 +179,7 @@ export function PackageInstallModal({
         </div>
 
         {!isInstalling && (
-          <footer className="package-install-footer">
-            <div className="package-install-actions">
-              <button
-                onClick={() => handleInstall('once')}
-                className="package-install-btn package-install-btn--secondary"
-                disabled={!hasValidPackages}
-                title="Install packages in the current kernel session (won't persist after restart)"
-              >
-                Install Once
-              </button>
-              <button
-                onClick={() => handleInstall('current-cell')}
-                className="package-install-btn package-install-btn--secondary"
-                disabled={!hasValidPackages}
-                title="Add !pip install to the beginning of this cell"
-              >
-                Add to This Cell
-              </button>
-              <button
-                onClick={() => handleInstall('setup-cell')}
-                className="package-install-btn package-install-btn--primary"
-                disabled={!hasValidPackages}
-                title="Add to a setup cell at the top of the notebook (recommended)"
-              >
-                Add to Setup Cell
-              </button>
-            </div>
-          </footer>
+          <InstallActions onInstall={handleInstall} hasValidPackages={hasValidPackages} />
         )}
       </div>
     </div>

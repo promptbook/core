@@ -27,16 +27,104 @@ export interface FileAutocompleteProps {
   textareaRef?: React.RefObject<HTMLTextAreaElement>;
 }
 
+interface FileDropdownProps {
+  files: FileEntry[];
+  selectedIndex: number;
+  currentDir: string;
+  onSelect: (file: FileEntry) => void;
+  onHover: (index: number) => void;
+  dropdownRef: React.RefObject<HTMLDivElement>;
+}
+
+function FileDropdown({ files, selectedIndex, currentDir, onSelect, onHover, dropdownRef }: FileDropdownProps) {
+  return (
+    <div ref={dropdownRef} className="file-autocomplete-dropdown">
+      {currentDir && <div className="file-autocomplete-header">{currentDir}</div>}
+      {files.map((file, index) => (
+        <div
+          key={file.path}
+          className={`file-autocomplete-item ${index === selectedIndex ? 'file-autocomplete-item--selected' : ''} ${file.isDirectory ? 'file-autocomplete-item--directory' : ''}`}
+          onClick={() => onSelect(file)}
+          onMouseEnter={() => onHover(index)}
+        >
+          <span className="file-autocomplete-icon">{file.isDirectory ? '📁' : '📄'}</span>
+          <span className="file-autocomplete-name">{file.name}</span>
+        </div>
+      ))}
+    </div>
+  );
+}
+
+/** Handle keyboard navigation for autocomplete dropdown */
+function handleAutocompleteKeyDown(
+  e: React.KeyboardEvent,
+  filteredFiles: FileEntry[],
+  selectedIndex: number,
+  setSelectedIndex: (fn: (prev: number) => number) => void,
+  selectFile: (file: FileEntry) => void,
+  closeAutocomplete: () => void
+): boolean {
+  switch (e.key) {
+    case 'ArrowDown':
+      e.preventDefault();
+      setSelectedIndex((prev) => Math.min(prev + 1, filteredFiles.length - 1));
+      return true;
+    case 'ArrowUp':
+      e.preventDefault();
+      setSelectedIndex((prev) => Math.max(prev - 1, 0));
+      return true;
+    case 'Enter':
+    case 'Tab':
+      e.preventDefault();
+      selectFile(filteredFiles[selectedIndex]);
+      return true;
+    case 'Escape':
+      e.preventDefault();
+      closeAutocomplete();
+      return true;
+    default:
+      return false;
+  }
+}
+
+/** Check if @ trigger should activate autocomplete */
+function checkTrigger(newValue: string, cursorPos: number): boolean {
+  if (cursorPos <= 0) return false;
+  const charBefore = newValue[cursorPos - 1];
+  const charBeforeThat = cursorPos > 1 ? newValue[cursorPos - 2] : ' ';
+  return charBefore === '@' && (charBeforeThat === ' ' || charBeforeThat === '\n' || cursorPos === 1);
+}
+
+/** Hook to handle click outside and close autocomplete */
+function useClickOutside(
+  showAutocomplete: boolean,
+  dropdownRef: React.RefObject<HTMLDivElement>,
+  textareaRef: React.RefObject<HTMLTextAreaElement>,
+  onClose: () => void
+) {
+  useEffect(() => {
+    if (!showAutocomplete) return;
+    const handleClickOutside = (e: MouseEvent) => {
+      const target = e.target as Node;
+      if (dropdownRef.current?.contains(target) || textareaRef.current?.contains(target)) return;
+      onClose();
+    };
+    document.addEventListener('mousedown', handleClickOutside);
+    return () => document.removeEventListener('mousedown', handleClickOutside);
+  }, [showAutocomplete, dropdownRef, textareaRef, onClose]);
+}
+
+/** Hook to scroll selected item into view */
+function useScrollIntoView(showAutocomplete: boolean, dropdownRef: React.RefObject<HTMLDivElement>, selectedIndex: number) {
+  useEffect(() => {
+    if (!showAutocomplete || !dropdownRef.current) return;
+    const selectedEl = dropdownRef.current.children[selectedIndex] as HTMLElement;
+    selectedEl?.scrollIntoView({ block: 'nearest' });
+  }, [selectedIndex, showAutocomplete, dropdownRef]);
+}
+
 export function FileAutocomplete({
-  value,
-  onChange,
-  listFiles,
-  placeholder,
-  className,
-  rows = 4,
-  onBlur,
-  onKeyDown,
-  textareaRef: externalRef,
+  value, onChange, listFiles, placeholder, className, rows = 4, onBlur, onKeyDown, textareaRef: externalRef,
 }: FileAutocompleteProps) {
   const [showAutocomplete, setShowAutocomplete] = useState(false);
   const [files, setFiles] = useState<FileEntry[]>([]);
@@ -48,12 +136,9 @@ export function FileAutocomplete({
   const textareaRefToUse = externalRef || internalRef;
   const dropdownRef = useRef<HTMLDivElement>(null);
 
-  // Filter files based on what user typed after @
-  const filteredFiles = files.filter((f) =>
-    f.name.toLowerCase().includes(filterText.toLowerCase())
-  );
+  const filteredFiles = files.filter((f) => f.name.toLowerCase().includes(filterText.toLowerCase()));
+  const closeAutocomplete = useCallback(() => setShowAutocomplete(false), []);
 
-  // Load files when autocomplete opens
   const loadFiles = useCallback(async (dir?: string) => {
     try {
       const result = await listFiles(dir);
@@ -64,84 +149,17 @@ export function FileAutocomplete({
     }
   }, [listFiles]);
 
-  // Detect @ trigger
-  const handleChange = (e: React.ChangeEvent<HTMLTextAreaElement>) => {
-    const newValue = e.target.value;
-    const cursorPos = e.target.selectionStart;
-    onChange(newValue);
-
-    // Check if we just typed @ after a space or at start
-    if (cursorPos > 0) {
-      const charBefore = newValue[cursorPos - 1];
-      const charBeforeThat = cursorPos > 1 ? newValue[cursorPos - 2] : ' ';
-
-      if (charBefore === '@' && (charBeforeThat === ' ' || charBeforeThat === '\n' || cursorPos === 1)) {
-        setShowAutocomplete(true);
-        setTriggerPosition(cursorPos);
-        setFilterText('');
-        setSelectedIndex(0);
-        loadFiles();
-        return;
-      }
-    }
-
-    // Update filter if autocomplete is showing
-    if (showAutocomplete) {
-      const textAfterTrigger = newValue.slice(triggerPosition, cursorPos);
-      if (textAfterTrigger.includes(' ') || textAfterTrigger.includes('\n')) {
-        // User typed space or newline, close autocomplete
-        setShowAutocomplete(false);
-      } else {
-        setFilterText(textAfterTrigger);
-      }
-    }
-  };
-
-  // Handle keyboard navigation
-  const handleKeyDown = (e: React.KeyboardEvent<HTMLTextAreaElement>) => {
-    if (showAutocomplete && filteredFiles.length > 0) {
-      if (e.key === 'ArrowDown') {
-        e.preventDefault();
-        setSelectedIndex((prev) => Math.min(prev + 1, filteredFiles.length - 1));
-        return;
-      }
-      if (e.key === 'ArrowUp') {
-        e.preventDefault();
-        setSelectedIndex((prev) => Math.max(prev - 1, 0));
-        return;
-      }
-      if (e.key === 'Enter' || e.key === 'Tab') {
-        e.preventDefault();
-        selectFile(filteredFiles[selectedIndex]);
-        return;
-      }
-      if (e.key === 'Escape') {
-        e.preventDefault();
-        setShowAutocomplete(false);
-        return;
-      }
-    }
-    onKeyDown?.(e);
-  };
-
-  // Select a file from the dropdown
-  const selectFile = (file: FileEntry) => {
+  const selectFile = useCallback((file: FileEntry) => {
     if (file.isDirectory) {
-      // Navigate into directory
       loadFiles(file.path);
       setFilterText('');
       setSelectedIndex(0);
       return;
     }
-
-    // Insert file path
-    const beforeTrigger = value.slice(0, triggerPosition - 1); // Remove the @
+    const beforeTrigger = value.slice(0, triggerPosition - 1);
     const afterCursor = value.slice(triggerPosition + filterText.length);
-    const newValue = beforeTrigger + file.name + afterCursor;
-    onChange(newValue);
+    onChange(beforeTrigger + file.name + afterCursor);
     setShowAutocomplete(false);
-
-    // Move cursor after inserted text
     setTimeout(() => {
       const textarea = textareaRefToUse.current;
       if (textarea) {
@@ -150,70 +168,45 @@ export function FileAutocomplete({
         textarea.focus();
       }
     }, 0);
+  }, [value, triggerPosition, filterText, onChange, loadFiles, textareaRefToUse]);
+
+  const handleChange = (e: React.ChangeEvent<HTMLTextAreaElement>) => {
+    const newValue = e.target.value;
+    const cursorPos = e.target.selectionStart;
+    onChange(newValue);
+    if (checkTrigger(newValue, cursorPos)) {
+      setShowAutocomplete(true);
+      setTriggerPosition(cursorPos);
+      setFilterText('');
+      setSelectedIndex(0);
+      loadFiles();
+      return;
+    }
+    if (showAutocomplete) {
+      const textAfterTrigger = newValue.slice(triggerPosition, cursorPos);
+      if (textAfterTrigger.includes(' ') || textAfterTrigger.includes('\n')) {
+        setShowAutocomplete(false);
+      } else {
+        setFilterText(textAfterTrigger);
+      }
+    }
   };
 
-  // Close on click outside
-  useEffect(() => {
-    const handleClickOutside = (e: MouseEvent) => {
-      if (
-        dropdownRef.current &&
-        !dropdownRef.current.contains(e.target as Node) &&
-        textareaRefToUse.current &&
-        !textareaRefToUse.current.contains(e.target as Node)
-      ) {
-        setShowAutocomplete(false);
-      }
-    };
-
-    if (showAutocomplete) {
-      document.addEventListener('mousedown', handleClickOutside);
-      return () => document.removeEventListener('mousedown', handleClickOutside);
+  const handleKeyDown = (e: React.KeyboardEvent<HTMLTextAreaElement>) => {
+    if (showAutocomplete && filteredFiles.length > 0) {
+      if (handleAutocompleteKeyDown(e, filteredFiles, selectedIndex, setSelectedIndex, selectFile, closeAutocomplete)) return;
     }
-  }, [showAutocomplete, textareaRefToUse]);
+    onKeyDown?.(e);
+  };
 
-  // Scroll selected item into view
-  useEffect(() => {
-    if (showAutocomplete && dropdownRef.current) {
-      const selectedEl = dropdownRef.current.children[selectedIndex] as HTMLElement;
-      if (selectedEl) {
-        selectedEl.scrollIntoView({ block: 'nearest' });
-      }
-    }
-  }, [selectedIndex, showAutocomplete]);
+  useClickOutside(showAutocomplete, dropdownRef, textareaRefToUse, closeAutocomplete);
+  useScrollIntoView(showAutocomplete, dropdownRef, selectedIndex);
 
   return (
     <div className="file-autocomplete-container">
-      <textarea
-        ref={textareaRefToUse}
-        value={value}
-        onChange={handleChange}
-        onKeyDown={handleKeyDown}
-        onBlur={onBlur}
-        placeholder={placeholder}
-        className={className}
-        rows={rows}
-      />
+      <textarea ref={textareaRefToUse} value={value} onChange={handleChange} onKeyDown={handleKeyDown} onBlur={onBlur} placeholder={placeholder} className={className} rows={rows} />
       {showAutocomplete && filteredFiles.length > 0 && (
-        <div ref={dropdownRef} className="file-autocomplete-dropdown">
-          {currentDir && (
-            <div className="file-autocomplete-header">
-              {currentDir}
-            </div>
-          )}
-          {filteredFiles.map((file, index) => (
-            <div
-              key={file.path}
-              className={`file-autocomplete-item ${index === selectedIndex ? 'file-autocomplete-item--selected' : ''} ${file.isDirectory ? 'file-autocomplete-item--directory' : ''}`}
-              onClick={() => selectFile(file)}
-              onMouseEnter={() => setSelectedIndex(index)}
-            >
-              <span className="file-autocomplete-icon">
-                {file.isDirectory ? '📁' : '📄'}
-              </span>
-              <span className="file-autocomplete-name">{file.name}</span>
-            </div>
-          ))}
-        </div>
+        <FileDropdown files={filteredFiles} selectedIndex={selectedIndex} currentDir={currentDir} onSelect={selectFile} onHover={setSelectedIndex} dropdownRef={dropdownRef} />
       )}
     </div>
   );

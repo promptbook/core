@@ -23,6 +23,45 @@ interface CellProps {
 // Utility to escape regex special characters
 const escapeRegex = (str: string) => str.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
 
+// Get preview text for collapsed state
+function getCollapsedPreview(activeTab: CodeCellTab, cell: CellState): string {
+  if (activeTab === 'code' && cell.code) {
+    return cell.code.split('\n')[0].slice(0, 80) + (cell.code.length > 80 ? '...' : '');
+  }
+  if (activeTab === 'short' && cell.shortDescription) {
+    return cell.shortDescription.slice(0, 80) + (cell.shortDescription.length > 80 ? '...' : '');
+  }
+  if (activeTab === 'pseudo' && cell.pseudoCode) {
+    return cell.pseudoCode.slice(0, 80) + (cell.pseudoCode.length > 80 ? '...' : '');
+  }
+  return 'Empty cell';
+}
+
+// Calculate parameter updates across all tabs
+function calculateParameterUpdates(
+  cell: CellState,
+  paramName: string,
+  oldValue: string,
+  newValue: string
+): Partial<CellState> {
+  const updates: Partial<CellState> = {};
+  const valueRegex = new RegExp(escapeRegex(oldValue), 'g');
+
+  if (cell.code) updates.code = cell.code.replace(valueRegex, newValue);
+
+  const paramRegex = (name: string, val: string) =>
+    new RegExp(`\\{\\{${escapeRegex(name)}:${escapeRegex(val)}\\}\\}`, 'g');
+
+  if (cell.shortDescription) {
+    updates.shortDescription = cell.shortDescription.replace(paramRegex(paramName, oldValue), `{{${paramName}:${newValue}}}`);
+  }
+  if (cell.pseudoCode) {
+    updates.pseudoCode = cell.pseudoCode.replace(paramRegex(paramName, oldValue), `{{${paramName}:${newValue}}}`);
+  }
+
+  return updates;
+}
+
 // Collapse icons
 const CollapseIcon = () => (
   <svg width="12" height="12" viewBox="0 0 12 12" fill="none" stroke="currentColor" strokeWidth="1.5">
@@ -77,39 +116,11 @@ export function Cell({ cell, onUpdate, onRun, onSync, isActive, onFocus, listFil
 
   // Handle parameter changes - update all tabs
   const handleParameterChange = (paramName: string, oldValue: string, newValue: string) => {
-    const updates: Partial<CellState> = {};
-    const valueRegex = new RegExp(escapeRegex(oldValue), 'g');
-
-    if (cell.code) updates.code = cell.code.replace(valueRegex, newValue);
-
-    const paramRegex = (name: string, val: string) =>
-      new RegExp(`\\{\\{${escapeRegex(name)}:${escapeRegex(val)}\\}\\}`, 'g');
-
-    if (cell.shortDescription) {
-      updates.shortDescription = cell.shortDescription.replace(paramRegex(paramName, oldValue), `{{${paramName}:${newValue}}}`);
-    }
-    if (cell.pseudoCode) {
-      updates.pseudoCode = cell.pseudoCode.replace(paramRegex(paramName, oldValue), `{{${paramName}:${newValue}}}`);
-    }
-
+    const updates = calculateParameterUpdates(cell, paramName, oldValue, newValue);
     if (Object.keys(updates).length > 0) onUpdate(cell.id, updates);
   };
 
   const cellClasses = `cell ${cell.isExecuting ? 'cell--executing' : ''} ${cell.isSyncing ? 'cell--syncing' : ''} ${isActive ? 'cell--active' : ''} ${cell.isInputCollapsed ? 'cell--input-collapsed' : ''}`;
-
-  // Get preview text for collapsed state
-  const getCollapsedPreview = (): string => {
-    if (activeTab === 'code' && cell.code) {
-      return cell.code.split('\n')[0].slice(0, 80) + (cell.code.length > 80 ? '...' : '');
-    }
-    if (activeTab === 'short' && cell.shortDescription) {
-      return cell.shortDescription.slice(0, 80) + (cell.shortDescription.length > 80 ? '...' : '');
-    }
-    if (activeTab === 'pseudo' && cell.pseudoCode) {
-      return cell.pseudoCode.slice(0, 80) + (cell.pseudoCode.length > 80 ? '...' : '');
-    }
-    return 'Empty cell';
-  };
 
   return (
     <div ref={cellRef} className={cellClasses} onClick={() => onFocus?.(cell.id)} tabIndex={0} onFocus={() => onFocus?.(cell.id)}>
@@ -130,7 +141,7 @@ export function Cell({ cell, onUpdate, onRun, onSync, isActive, onFocus, listFil
       />
       {cell.isInputCollapsed ? (
         <div className="cell-collapsed-preview" onClick={handleToggleInputCollapse}>
-          <span className="cell-collapsed-preview__text">{getCollapsedPreview()}</span>
+          <span className="cell-collapsed-preview__text">{getCollapsedPreview(activeTab, cell)}</span>
           <span className="cell-collapsed-preview__hint">Click to expand</span>
         </div>
       ) : (

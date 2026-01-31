@@ -459,6 +459,19 @@ body {
   color: white;
 }
 
+.toolbar-btn--theme {
+  padding: var(--pb-space-2);
+  min-width: auto;
+}
+
+.toolbar-btn--theme svg {
+  transition: transform var(--pb-duration-fast) var(--pb-ease);
+}
+
+.toolbar-btn--theme:hover svg {
+  transform: rotate(15deg);
+}
+
 .toolbar-dropdown {
   position: relative;
 }

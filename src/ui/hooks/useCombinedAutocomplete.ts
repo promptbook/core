@@ -65,19 +65,173 @@ function isValidTriggerPosition(str: string, cursorPos: number): boolean {
 function calculateDropdownPosition(textarea: HTMLTextAreaElement): DropdownPosition {
   const rect = textarea.getBoundingClientRect();
   return {
-    top: rect.bottom + 4, // 4px gap below textarea
+    top: rect.bottom + 4,
     left: rect.left,
     width: rect.width,
   };
 }
 
-export function useCombinedAutocomplete({
-  value,
-  onChange,
-  listFiles,
-  getSymbols,
-  textareaRef,
-}: UseCombinedAutocompleteOptions) {
+// Filter items based on filter text
+function filterItems(items: AutocompleteItem[], filterText: string): AutocompleteItem[] {
+  return items.filter((item) =>
+    item.label.toLowerCase().includes(filterText.toLowerCase())
+  );
+}
+
+// Check if "create new" option should be shown for symbol mode
+function shouldShowCreateOption(
+  mode: AutocompleteMode,
+  filterText: string,
+  items: AutocompleteItem[]
+): boolean {
+  return mode === 'symbol' &&
+    filterText.length > 0 &&
+    /^[a-zA-Z_][a-zA-Z0-9_]*$/.test(filterText) &&
+    !items.some(item => item.label.toLowerCase() === filterText.toLowerCase());
+}
+
+// Build insertion text from item selection
+function buildInsertedText(
+  value: string,
+  triggerPosition: number,
+  filterText: string,
+  mode: AutocompleteMode,
+  itemLabel: string
+): { newValue: string; newCursorPos: number } {
+  const beforeTrigger = value.slice(0, triggerPosition - 1);
+  const afterCursor = value.slice(triggerPosition + filterText.length);
+  const insertText = mode === 'file' ? itemLabel : `#${itemLabel}`;
+  const newValue = beforeTrigger + insertText + afterCursor;
+  return { newValue, newCursorPos: beforeTrigger.length + insertText.length };
+}
+
+// Build text for new symbol insertion
+function buildNewSymbolText(
+  value: string,
+  triggerPosition: number,
+  filterText: string,
+  name: string
+): { newValue: string; newCursorPos: number } {
+  const beforeTrigger = value.slice(0, triggerPosition);
+  const afterCursor = value.slice(triggerPosition + filterText.length);
+  const newValue = beforeTrigger + name + afterCursor;
+  return { newValue, newCursorPos: beforeTrigger.length + name.length };
+}
+
+// Handle keyboard navigation and selection
+function handleAutocompleteKeyDown(
+  e: React.KeyboardEvent<HTMLTextAreaElement>,
+  state: {
+    mode: AutocompleteMode;
+    totalItems: number;
+    selectedIndex: number;
+    filteredItems: AutocompleteItem[];
+    showCreateOption: boolean;
+    filterText: string;
+  },
+  actions: {
+    setSelectedIndex: React.Dispatch<React.SetStateAction<number>>;
+    selectItem: (item: AutocompleteItem) => void;
+    insertNewSymbol: (name: string) => void;
+    setMode: React.Dispatch<React.SetStateAction<AutocompleteMode>>;
+  }
+): boolean {
+  const { mode, totalItems, selectedIndex, filteredItems, showCreateOption, filterText } = state;
+  const { setSelectedIndex, selectItem, insertNewSymbol, setMode } = actions;
+
+  if (mode === 'none' || totalItems === 0) return false;
+
+  switch (e.key) {
+    case 'ArrowDown':
+      e.preventDefault();
+      setSelectedIndex((prev) => Math.min(prev + 1, totalItems - 1));
+      return true;
+    case 'ArrowUp':
+      e.preventDefault();
+      setSelectedIndex((prev) => Math.max(prev - 1, 0));
+      return true;
+    case 'Enter':
+    case 'Tab':
+      e.preventDefault();
+      if (selectedIndex < filteredItems.length) {
+        selectItem(filteredItems[selectedIndex]);
+      } else if (showCreateOption) {
+        insertNewSymbol(filterText);
+      }
+      return true;
+    case 'Escape':
+      e.preventDefault();
+      setMode('none');
+      return true;
+    default:
+      return false;
+  }
+}
+
+// Helper to set cursor position in textarea
+function setCursorPosition(textarea: HTMLTextAreaElement | null, position: number): void {
+  setTimeout(() => {
+    if (textarea) {
+      textarea.setSelectionRange(position, position);
+      textarea.focus();
+    }
+  }, 0);
+}
+
+// Setup click outside listener for dropdown
+function useClickOutside(
+  mode: AutocompleteMode,
+  dropdownRef: React.RefObject<HTMLDivElement>,
+  textareaRef: React.RefObject<HTMLTextAreaElement>,
+  setMode: React.Dispatch<React.SetStateAction<AutocompleteMode>>
+): void {
+  useEffect(() => {
+    if (mode === 'none') return;
+    const handleClickOutside = (e: MouseEvent) => {
+      const target = e.target as Node;
+      const isOutside = dropdownRef.current && !dropdownRef.current.contains(target) &&
+        textareaRef.current && !textareaRef.current.contains(target);
+      if (isOutside) setMode('none');
+    };
+    document.addEventListener('mousedown', handleClickOutside);
+    return () => document.removeEventListener('mousedown', handleClickOutside);
+  }, [mode, textareaRef, dropdownRef, setMode]);
+}
+
+// Scroll selected item into view
+function useScrollIntoView(mode: AutocompleteMode, selectedIndex: number, dropdownRef: React.RefObject<HTMLDivElement>): void {
+  useEffect(() => {
+    if (mode !== 'none' && dropdownRef.current) {
+      const selectedEl = dropdownRef.current.querySelector('.autocomplete-item--selected') as HTMLElement;
+      selectedEl?.scrollIntoView({ block: 'nearest' });
+    }
+  }, [selectedIndex, mode, dropdownRef]);
+}
+
+// Check for trigger character and activate autocomplete mode
+interface TriggerResult {
+  triggered: boolean;
+  mode?: 'file' | 'symbol';
+}
+
+function checkTrigger(newValue: string, cursorPos: number, hasFiles: boolean, hasSymbols: boolean): TriggerResult {
+  if (cursorPos <= 0) return { triggered: false };
+  const charBefore = newValue[cursorPos - 1];
+  const isValid = isValidTriggerPosition(newValue, cursorPos);
+  if (charBefore === '@' && isValid && hasFiles) return { triggered: true, mode: 'file' };
+  if (charBefore === '#' && isValid && hasSymbols) return { triggered: true, mode: 'symbol' };
+  return { triggered: false };
+}
+
+// Update filter text based on content after trigger
+function getFilterUpdate(newValue: string, cursorPos: number, triggerPos: number): { clear: boolean; text: string } {
+  const textAfterTrigger = newValue.slice(triggerPos, cursorPos);
+  if (textAfterTrigger.includes(' ') || textAfterTrigger.includes('\n')) return { clear: true, text: '' };
+  return { clear: false, text: textAfterTrigger };
+}
+
+export function useCombinedAutocomplete(opts: UseCombinedAutocompleteOptions) {
+  const { value, onChange, listFiles, getSymbols, textareaRef } = opts;
   const [mode, setMode] = useState<AutocompleteMode>('none');
   const [items, setItems] = useState<AutocompleteItem[]>([]);
   const [selectedIndex, setSelectedIndex] = useState(0);
@@ -87,223 +241,70 @@ export function useCombinedAutocomplete({
   const [isLoading, setIsLoading] = useState(false);
   const [dropdownPosition, setDropdownPosition] = useState<DropdownPosition>({ top: 0, left: 0, width: 300 });
   const dropdownRef = useRef<HTMLDivElement>(null);
-
-  // Filter items based on what user typed
-  const filteredItems = items.filter((item) =>
-    item.label.toLowerCase().includes(filterText.toLowerCase())
-  );
-
-  // For symbol mode, add "create new" option if valid identifier
-  const showCreateOption = mode === 'symbol' &&
-    filterText.length > 0 &&
-    /^[a-zA-Z_][a-zA-Z0-9_]*$/.test(filterText) &&
-    !items.some(item => item.label.toLowerCase() === filterText.toLowerCase());
-
+  const filteredItems = filterItems(items, filterText);
+  const showCreateOption = shouldShowCreateOption(mode, filterText, items);
   const totalItems = filteredItems.length + (showCreateOption ? 1 : 0);
 
-  // Update dropdown position when mode changes
   useEffect(() => {
-    if (mode !== 'none' && textareaRef.current) {
-      setDropdownPosition(calculateDropdownPosition(textareaRef.current));
-    }
+    if (mode !== 'none' && textareaRef.current) setDropdownPosition(calculateDropdownPosition(textareaRef.current));
   }, [mode, textareaRef]);
 
-  // Load files
   const loadFiles = useCallback(async (dir?: string) => {
     if (!listFiles) return;
     setIsLoading(true);
-    try {
-      const result = await listFiles(dir);
-      setCurrentDir(result.cwd);
-      setItems(filesToItems(result.files));
-    } catch {
-      setItems([]);
-    } finally {
-      setIsLoading(false);
-    }
+    try { const r = await listFiles(dir); setCurrentDir(r.cwd); setItems(filesToItems(r.files)); }
+    catch { setItems([]); } finally { setIsLoading(false); }
   }, [listFiles]);
 
-  // Load symbols
   const loadSymbols = useCallback(async () => {
     if (!getSymbols) return;
     setIsLoading(true);
-    try {
-      const symbols = await getSymbols();
-      setItems(symbolsToItems(symbols));
-    } catch {
-      setItems([]);
-    } finally {
-      setIsLoading(false);
-    }
+    try { setItems(symbolsToItems(await getSymbols())); }
+    catch { setItems([]); } finally { setIsLoading(false); }
   }, [getSymbols]);
 
-  // Insert selected item into text
   const insertItem = useCallback((item: AutocompleteItem) => {
-    const beforeTrigger = value.slice(0, triggerPosition - 1);
-    const afterCursor = value.slice(triggerPosition + filterText.length);
-    const insertText = mode === 'file' ? item.label : `#${item.label}`;
-    const newValue = beforeTrigger + insertText + afterCursor;
-    onChange(newValue);
-    setMode('none');
-
-    setTimeout(() => {
-      if (textareaRef.current) {
-        const newPos = beforeTrigger.length + insertText.length;
-        textareaRef.current.setSelectionRange(newPos, newPos);
-        textareaRef.current.focus();
-      }
-    }, 0);
+    const { newValue, newCursorPos } = buildInsertedText(value, triggerPosition, filterText, mode, item.label);
+    onChange(newValue); setMode('none'); setCursorPosition(textareaRef.current, newCursorPos);
   }, [value, triggerPosition, filterText, mode, onChange, textareaRef]);
 
-  // Insert new proposed symbol
   const insertNewSymbol = useCallback((name: string) => {
-    const beforeTrigger = value.slice(0, triggerPosition);
-    const afterCursor = value.slice(triggerPosition + filterText.length);
-    const newValue = beforeTrigger + name + afterCursor;
-    onChange(newValue);
-    setMode('none');
-
-    setTimeout(() => {
-      if (textareaRef.current) {
-        const newPos = beforeTrigger.length + name.length;
-        textareaRef.current.setSelectionRange(newPos, newPos);
-        textareaRef.current.focus();
-      }
-    }, 0);
+    const { newValue, newCursorPos } = buildNewSymbolText(value, triggerPosition, filterText, name);
+    onChange(newValue); setMode('none'); setCursorPosition(textareaRef.current, newCursorPos);
   }, [value, triggerPosition, filterText, onChange, textareaRef]);
 
-  // Handle item selection
   const selectItem = useCallback((item: AutocompleteItem) => {
-    if (mode === 'file' && item.isDirectory) {
-      loadFiles(item.path);
-      setFilterText('');
-      setSelectedIndex(0);
-      return;
-    }
+    if (mode === 'file' && item.isDirectory) { loadFiles(item.path); setFilterText(''); setSelectedIndex(0); return; }
     insertItem(item);
   }, [mode, loadFiles, insertItem]);
 
-  // Handle text change
   const handleChange = useCallback((e: React.ChangeEvent<HTMLTextAreaElement>) => {
-    const newValue = e.target.value;
-    const cursorPos = e.target.selectionStart;
+    const newValue = e.target.value; const cursorPos = e.target.selectionStart;
     onChange(newValue);
-
-    if (cursorPos > 0) {
-      const charBefore = newValue[cursorPos - 1];
-      const isValidTrigger = isValidTriggerPosition(newValue, cursorPos);
-
-      if (charBefore === '@' && isValidTrigger && listFiles) {
-        setMode('file');
-        setTriggerPosition(cursorPos);
-        setFilterText('');
-        setSelectedIndex(0);
-        setCurrentDir('');
-        if (textareaRef.current) {
-          setDropdownPosition(calculateDropdownPosition(textareaRef.current));
-        }
-        loadFiles();
-        return;
-      }
-
-      if (charBefore === '#' && isValidTrigger && getSymbols) {
-        setMode('symbol');
-        setTriggerPosition(cursorPos);
-        setFilterText('');
-        setSelectedIndex(0);
-        if (textareaRef.current) {
-          setDropdownPosition(calculateDropdownPosition(textareaRef.current));
-        }
-        loadSymbols();
-        return;
-      }
+    const trigger = checkTrigger(newValue, cursorPos, !!listFiles, !!getSymbols);
+    if (trigger.triggered && trigger.mode) {
+      setMode(trigger.mode); setTriggerPosition(cursorPos); setFilterText(''); setSelectedIndex(0);
+      if (trigger.mode === 'file') setCurrentDir('');
+      if (textareaRef.current) setDropdownPosition(calculateDropdownPosition(textareaRef.current));
+      if (trigger.mode === 'file') loadFiles(); else loadSymbols();
+      return;
     }
-
     if (mode !== 'none') {
-      const textAfterTrigger = newValue.slice(triggerPosition, cursorPos);
-      if (textAfterTrigger.includes(' ') || textAfterTrigger.includes('\n')) {
-        setMode('none');
-      } else {
-        setFilterText(textAfterTrigger);
-      }
+      const update = getFilterUpdate(newValue, cursorPos, triggerPosition);
+      if (update.clear) setMode('none'); else setFilterText(update.text);
     }
   }, [onChange, listFiles, getSymbols, mode, triggerPosition, loadFiles, loadSymbols, textareaRef]);
 
-  // Handle keyboard events
-  const handleKeyDown = useCallback((e: React.KeyboardEvent<HTMLTextAreaElement>, externalHandler?: (e: React.KeyboardEvent) => void) => {
-    if (mode !== 'none' && totalItems > 0) {
-      if (e.key === 'ArrowDown') {
-        e.preventDefault();
-        setSelectedIndex((prev) => Math.min(prev + 1, totalItems - 1));
-        return;
-      }
-      if (e.key === 'ArrowUp') {
-        e.preventDefault();
-        setSelectedIndex((prev) => Math.max(prev - 1, 0));
-        return;
-      }
-      if (e.key === 'Enter' || e.key === 'Tab') {
-        e.preventDefault();
-        if (selectedIndex < filteredItems.length) {
-          selectItem(filteredItems[selectedIndex]);
-        } else if (showCreateOption) {
-          insertNewSymbol(filterText);
-        }
-        return;
-      }
-      if (e.key === 'Escape') {
-        e.preventDefault();
-        setMode('none');
-        return;
-      }
-    }
-    externalHandler?.(e);
+  const handleKeyDown = useCallback((e: React.KeyboardEvent<HTMLTextAreaElement>, ext?: (e: React.KeyboardEvent) => void) => {
+    const handled = handleAutocompleteKeyDown(e,
+      { mode, totalItems, selectedIndex, filteredItems, showCreateOption, filterText },
+      { setSelectedIndex, selectItem, insertNewSymbol, setMode });
+    if (!handled) ext?.(e);
   }, [mode, totalItems, selectedIndex, filteredItems, showCreateOption, filterText, selectItem, insertNewSymbol]);
 
-  // Close on click outside
-  useEffect(() => {
-    const handleClickOutside = (e: MouseEvent) => {
-      if (
-        dropdownRef.current &&
-        !dropdownRef.current.contains(e.target as Node) &&
-        textareaRef.current &&
-        !textareaRef.current.contains(e.target as Node)
-      ) {
-        setMode('none');
-      }
-    };
+  useClickOutside(mode, dropdownRef, textareaRef, setMode);
+  useScrollIntoView(mode, selectedIndex, dropdownRef);
 
-    if (mode !== 'none') {
-      document.addEventListener('mousedown', handleClickOutside);
-      return () => document.removeEventListener('mousedown', handleClickOutside);
-    }
-  }, [mode, textareaRef]);
-
-  // Scroll selected item into view
-  useEffect(() => {
-    if (mode !== 'none' && dropdownRef.current) {
-      const selectedEl = dropdownRef.current.querySelector('.autocomplete-item--selected') as HTMLElement;
-      if (selectedEl) {
-        selectedEl.scrollIntoView({ block: 'nearest' });
-      }
-    }
-  }, [selectedIndex, mode]);
-
-  return {
-    mode,
-    items: filteredItems,
-    selectedIndex,
-    filterText,
-    currentDir,
-    isLoading,
-    showCreateOption,
-    totalItems,
-    dropdownRef,
-    dropdownPosition,
-    handleChange,
-    handleKeyDown,
-    selectItem,
-    insertNewSymbol,
-    setSelectedIndex,
-  };
+  return { mode, items: filteredItems, selectedIndex, filterText, currentDir, isLoading, showCreateOption,
+    totalItems, dropdownRef, dropdownPosition, handleChange, handleKeyDown, selectItem, insertNewSymbol, setSelectedIndex };
 }
