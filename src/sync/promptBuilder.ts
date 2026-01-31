@@ -79,14 +79,14 @@ function formatCellsContext(cellsBefore?: CellContext[], cellsAfter?: CellContex
 export type SyncDirection =
   | 'expandInstructions'
   | 'shortenInstructions'
-  | 'shortToFull'
-  | 'fullToShort'
+  | 'shortToPseudo'
+  | 'pseudoToShort'
   | 'toCode'
-  | 'fullToCode'
+  | 'pseudoToCode'
   | 'shortToCode'
   | 'toInstructions'
   | 'codeToShort'
-  | 'codeToFull';
+  | 'codeToPseudo';
 
 /**
  * Extract #mentions from description text
@@ -136,19 +136,19 @@ export function buildSyncPrompt(direction: string, context: AiSyncContext): stri
   }
 
   // Handle description-to-description conversions
-  if (direction === 'shortToFull') {
-    return buildShortToFullPrompt(newContent, existingCounterpart);
+  if (direction === 'shortToPseudo') {
+    return buildShortToPseudoPrompt(newContent, existingCounterpart);
   }
 
-  if (direction === 'fullToShort') {
-    return buildFullToShortPrompt(newContent, existingCounterpart);
+  if (direction === 'pseudoToShort') {
+    return buildPseudoToShortPrompt(newContent, existingCounterpart);
   }
 
   // Normalize direction types
-  const isToCode = direction === 'toCode' || direction === 'fullToCode' || direction === 'shortToCode';
+  const isToCode = direction === 'toCode' || direction === 'pseudoToCode' || direction === 'shortToCode';
   const isToShort = direction === 'codeToShort';
-  const isToFull = direction === 'codeToFull';
-  const isToInstructions = direction === 'toInstructions' || isToShort || isToFull;
+  const isToPseudo = direction === 'codeToPseudo';
+  const isToInstructions = direction === 'toInstructions' || isToShort || isToPseudo;
 
   const hasExistingCode = isToCode && existingCounterpart?.trim();
   const hasExistingInstructions = isToInstructions && existingCounterpart?.trim();
@@ -169,7 +169,7 @@ export function buildSyncPrompt(direction: string, context: AiSyncContext): stri
       newContent,
       previousContent,
       existingCounterpart,
-      isToShort,
+      targetType: isToShort ? 'short' : 'pseudo',
       hasExistingInstructions: !!hasExistingInstructions,
       hasChanges: !!hasChanges,
     });
@@ -208,34 +208,40 @@ ${content}
 Return ONLY the shortened instructions, no code or markdown.`;
 }
 
-function buildShortToFullPrompt(content: string, existingCounterpart?: string): string {
-  return `Expand this short description into a fuller, more detailed description.
+function buildShortToPseudoPrompt(content: string, existingCounterpart?: string): string {
+  return `Convert this short description into structured pseudo-code with numbered steps.
 
 SHORT DESCRIPTION:
 ${content}
 
-${existingCounterpart ? `EXISTING FULL DESCRIPTION (use as reference):
+${existingCounterpart ? `EXISTING PSEUDO-CODE (use as reference for style):
 ${existingCounterpart}
 
 ` : ''}GUIDELINES:
-- Write 2-4 sentences with more detail
+- Use numbered steps (1., 2., 3., etc.)
+- Use structured keywords: FOR, IF, WHILE, RETURN, etc.
+- Indent nested logic with spaces
 - Keep ALL parameters in {{name:value}} format
 - Keep ALL #variable and #function mentions exactly as written
-- Explain the purpose and approach
-- Describe expected inputs and outputs
-- Don't add parameters that aren't in the short description
+- Show the logical flow, not the implementation details
 
 EXAMPLE:
-Input: "Calculate #moving_average for {{window:7}} days"
-Output: "Calculate the #moving_average over a sliding {{window:7}} day period. This smooths out short-term fluctuations and highlights longer-term trends in the data. The result will be stored in #moving_average for use in subsequent analysis."
+Input: "Load sales CSV, filter by {{threshold:100}}, calculate #average_price"
+Output:
+1. Load sales data from CSV file into #sales_data
+2. FOR each row in #sales_data:
+   - IF price > {{threshold:100}}:
+       ADD row to #filtered_results
+3. Calculate #average_price from #filtered_results
+4. RETURN #average_price
 
-Return ONLY the expanded description, no code or markdown.`;
+Return ONLY the pseudo-code, no actual code or markdown fences.`;
 }
 
-function buildFullToShortPrompt(content: string, existingCounterpart?: string): string {
-  return `Condense this full description into a short, concise summary.
+function buildPseudoToShortPrompt(content: string, existingCounterpart?: string): string {
+  return `Condense this pseudo-code into a short, concise summary.
 
-FULL DESCRIPTION:
+PSEUDO-CODE:
 ${content}
 
 ${existingCounterpart ? `EXISTING SHORT DESCRIPTION (use as reference):
@@ -249,8 +255,10 @@ ${existingCounterpart}
 - Don't mention "Python" or "code"
 
 EXAMPLE:
-Input: "Load the sales data from a CSV file and calculate the total revenue by summing all transaction amounts. Store the result in a variable for later reporting."
-Output: "Load sales CSV, calculate #total_revenue"
+Input: "1. Load sales data from CSV
+2. FOR each row: IF price > 100: ADD to results
+3. Calculate #average from results"
+Output: "Load sales CSV, filter and calculate #average"
 
 Return ONLY the shortened description, no code or markdown.`;
 }
@@ -340,13 +348,14 @@ interface ToDescriptionPromptOptions {
   newContent: string;
   previousContent?: string;
   existingCounterpart?: string;
-  isToShort: boolean;
+  targetType: 'short' | 'pseudo';
   hasExistingInstructions: boolean;
   hasChanges: boolean;
 }
 
 function buildToDescriptionPrompt(opts: ToDescriptionPromptOptions): string {
-  const { newContent, previousContent, existingCounterpart, isToShort, hasExistingInstructions, hasChanges } = opts;
+  const { newContent, previousContent, existingCounterpart, targetType, hasExistingInstructions, hasChanges } = opts;
+  const isToShort = targetType === 'short';
 
   const shortGuidelines = `
 GUIDELINES FOR SHORT DESCRIPTION:
@@ -367,27 +376,49 @@ Output: "Calculate #avg_price from prices list"
 Code: \`df = pd.read_csv('sales.csv'); monthly = df.groupby('month').sum()\`
 Output: "Load sales CSV, create #monthly summary"`;
 
-  const fullGuidelines = `
-GUIDELINES FOR FULL DESCRIPTION:
-- 2-4 sentences with more detail
-- Describe the purpose and approach
-- Include ALL parameters as {{name:value}} placeholders
-- Use #variable_name to reference important variables defined in code
-- Use #function_name to reference important functions defined in code
-- Explain what inputs are expected and what outputs are produced
+  const pseudoGuidelines = `
+GUIDELINES FOR PSEUDO-CODE:
+- Use numbered steps (1., 2., 3., etc.)
+- Use structured keywords: FOR, IF, WHILE, RETURN, SET, etc.
+- Indent nested logic with spaces
+- Keep ALL parameters in {{name:value}} format
+- Use #variable_name to reference variables defined in code
+- Use #function_name to reference functions defined in code
+- Show the logical flow, not implementation details
+- Don't include actual Python syntax
 
 EXAMPLES:
-Code: \`def calc_fibonacci(n): ... ; fibonacci = calc_fibonacci(10)\`
-Output: "Define #calc_fibonacci function that generates Fibonacci sequence. Call it with {{count:10}} to generate the first 10 numbers and store in #fibonacci list."
+Code: \`def calc_fibonacci(n):
+    fib = [0, 1]
+    for i in range(2, n):
+        fib.append(fib[-1] + fib[-2])
+    return fib
+fibonacci = calc_fibonacci(10)\`
+Output:
+1. DEFINE #calc_fibonacci(n):
+   - SET #fib to [0, 1]
+   - FOR i from 2 to n:
+       APPEND sum of last two values to #fib
+   - RETURN #fib
+2. CALL #calc_fibonacci with {{count:10}}
+3. STORE result in #fibonacci
 
-Code: \`prices = load_data(); avg = sum(prices)/len(prices); std = statistics.stdev(prices)\`
-Output: "Load price data and calculate statistics. Compute #avg (mean) and #std (standard deviation) for analysis."`;
+Code: \`df = pd.read_csv('sales.csv')
+filtered = df[df['price'] > 100]
+avg = filtered['price'].mean()\`
+Output:
+1. Load sales data from CSV into #df
+2. FOR each row in #df:
+   - IF price > {{threshold:100}}:
+       ADD to #filtered
+3. Calculate #avg from #filtered prices`;
 
-  const guidelines = isToShort ? shortGuidelines : fullGuidelines;
-  const lengthHint = isToShort ? 'Keep it very short (1 sentence, 5-10 words).' : 'Include 2-4 sentences with details.';
+  const guidelines = isToShort ? shortGuidelines : pseudoGuidelines;
+  const lengthHint = isToShort ? 'Keep it very short (1 sentence, 5-10 words).' : 'Use numbered steps with structured keywords.';
+  const typeName = isToShort ? 'SHORT' : 'PSEUDO-CODE';
 
   if (hasExistingInstructions && hasChanges) {
-    return `You are updating ${isToShort ? 'a SHORT description' : 'a FULL description'} based on changed code.
+    return `You are updating ${isToShort ? 'a SHORT description' : 'PSEUDO-CODE'} based on changed code.
 
 PREVIOUS CODE:
 \`\`\`python
@@ -399,30 +430,30 @@ NEW CODE:
 ${newContent}
 \`\`\`
 
-CURRENT ${isToShort ? 'SHORT' : 'FULL'} DESCRIPTION:
+CURRENT ${typeName}:
 ${existingCounterpart}
 ${guidelines}
 
-Update the description to accurately describe what the new code does. ${lengthHint}
+Update the ${isToShort ? 'description' : 'pseudo-code'} to accurately describe what the new code does. ${lengthHint}
 
-Return ONLY the updated description, no code or markdown.`;
+Return ONLY the updated ${isToShort ? 'description' : 'pseudo-code'}, no actual code or markdown.`;
   } else if (hasExistingInstructions) {
-    return `You are generating a ${isToShort ? 'SHORT' : 'FULL'} description for code.
+    return `You are generating ${isToShort ? 'a SHORT description' : 'PSEUDO-CODE'} for code.
 
 CODE:
 \`\`\`python
 ${newContent}
 \`\`\`
 
-EXISTING DESCRIPTION (use as reference for style):
+EXISTING ${typeName} (use as reference for style):
 ${existingCounterpart}
 ${guidelines}
 
 ${lengthHint}
 
-Return ONLY the description, no code or markdown.`;
+Return ONLY the ${isToShort ? 'description' : 'pseudo-code'}, no actual code or markdown.`;
   } else {
-    return `Generate a ${isToShort ? 'SHORT' : 'FULL'} description for this code.
+    return `Generate ${isToShort ? 'a SHORT description' : 'PSEUDO-CODE'} for this code.
 ${guidelines}
 
 CODE:
@@ -432,6 +463,6 @@ ${newContent}
 
 ${lengthHint}
 
-Return ONLY the description, no code or markdown.`;
+Return ONLY the ${isToShort ? 'description' : 'pseudo-code'}, no actual code or markdown.`;
   }
 }

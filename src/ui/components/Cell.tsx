@@ -67,8 +67,8 @@ export function Cell({ cell, onUpdate, onRun, onSync, isActive, onFocus, listFil
     onUpdate(cell.id, { shortDescription: content, lastEditedTab: 'short', isDirty: true });
   };
 
-  const handleFullChange = (content: string) => {
-    onUpdate(cell.id, { fullDescription: content, lastEditedTab: 'full', isDirty: true });
+  const handlePseudoChange = (content: string) => {
+    onUpdate(cell.id, { pseudoCode: content, lastEditedTab: 'pseudo', isDirty: true });
   };
 
   const handleCodeChange = (code: string) => {
@@ -88,8 +88,8 @@ export function Cell({ cell, onUpdate, onRun, onSync, isActive, onFocus, listFil
     if (cell.shortDescription) {
       updates.shortDescription = cell.shortDescription.replace(paramRegex(paramName, oldValue), `{{${paramName}:${newValue}}}`);
     }
-    if (cell.fullDescription) {
-      updates.fullDescription = cell.fullDescription.replace(paramRegex(paramName, oldValue), `{{${paramName}:${newValue}}}`);
+    if (cell.pseudoCode) {
+      updates.pseudoCode = cell.pseudoCode.replace(paramRegex(paramName, oldValue), `{{${paramName}:${newValue}}}`);
     }
 
     if (Object.keys(updates).length > 0) onUpdate(cell.id, updates);
@@ -105,8 +105,8 @@ export function Cell({ cell, onUpdate, onRun, onSync, isActive, onFocus, listFil
     if (activeTab === 'short' && cell.shortDescription) {
       return cell.shortDescription.slice(0, 80) + (cell.shortDescription.length > 80 ? '...' : '');
     }
-    if (activeTab === 'full' && cell.fullDescription) {
-      return cell.fullDescription.slice(0, 80) + (cell.fullDescription.length > 80 ? '...' : '');
+    if (activeTab === 'pseudo' && cell.pseudoCode) {
+      return cell.pseudoCode.slice(0, 80) + (cell.pseudoCode.length > 80 ? '...' : '');
     }
     return 'Empty cell';
   };
@@ -140,7 +140,7 @@ export function Cell({ cell, onUpdate, onRun, onSync, isActive, onFocus, listFil
             cell={cell}
             contentHeight={contentHeight}
             onShortChange={handleShortChange}
-            onFullChange={handleFullChange}
+            onPseudoChange={handlePseudoChange}
             onCodeChange={handleCodeChange}
             onParameterChange={handleParameterChange}
             listFiles={listFiles}
@@ -204,7 +204,7 @@ function CellToolbar({ activeTab, onTabChange, isDirty, isSyncing, isExecuting, 
         </button>
         <div className="cell-tabs" role="tablist">
           <button role="tab" aria-selected={activeTab === 'short'} onClick={() => onTabChange('short')}>Short</button>
-          <button role="tab" aria-selected={activeTab === 'full'} onClick={() => onTabChange('full')}>Full</button>
+          <button role="tab" aria-selected={activeTab === 'pseudo'} onClick={() => onTabChange('pseudo')}>Pseudo</button>
           <button role="tab" aria-selected={activeTab === 'code'} onClick={() => onTabChange('code')}>Code</button>
         </div>
       </div>
@@ -286,14 +286,14 @@ interface CellContentProps {
   cell: CellState;
   contentHeight: number;
   onShortChange: (content: string) => void;
-  onFullChange: (content: string) => void;
+  onPseudoChange: (content: string) => void;
   onCodeChange: (code: string) => void;
   onParameterChange: (paramName: string, oldValue: string, newValue: string) => void;
   listFiles?: (dirPath?: string) => Promise<{ files: FileEntry[]; cwd: string }>;
   getSymbols?: () => Promise<KernelSymbol[]>;
 }
 
-function CellContent({ activeTab, cell, contentHeight, onShortChange, onFullChange, onCodeChange, onParameterChange, listFiles, getSymbols }: CellContentProps) {
+function CellContent({ activeTab, cell, contentHeight, onShortChange, onPseudoChange, onCodeChange, onParameterChange, listFiles, getSymbols }: CellContentProps) {
   const editorHeight = contentHeight - 32;
 
   return (
@@ -301,8 +301,8 @@ function CellContent({ activeTab, cell, contentHeight, onShortChange, onFullChan
       {activeTab === 'short' && (
         <DescriptionEditor content={cell.shortDescription} onChange={onShortChange} onParameterChange={onParameterChange} placeholder="Brief description of what this code does..." isSyncing={cell.isSyncing} minHeight={editorHeight} listFiles={listFiles} getSymbols={getSymbols} />
       )}
-      {activeTab === 'full' && (
-        <DescriptionEditor content={cell.fullDescription} onChange={onFullChange} onParameterChange={onParameterChange} placeholder="Detailed explanation of the code in plain English..." isSyncing={cell.isSyncing} minHeight={editorHeight} listFiles={listFiles} getSymbols={getSymbols} />
+      {activeTab === 'pseudo' && (
+        <DescriptionEditor content={cell.pseudoCode} onChange={onPseudoChange} onParameterChange={onParameterChange} placeholder="Structured pseudo-code with numbered steps (FOR, IF, WHILE...)" isSyncing={cell.isSyncing} minHeight={editorHeight} listFiles={listFiles} getSymbols={getSymbols} />
       )}
       {activeTab === 'code' && (
         <div className="cell-code-wrapper">

@@ -3,7 +3,7 @@ import { StructuredInstructions } from './instructions';
 export type CellOutputType = 'stdout' | 'stderr' | 'result' | 'display' | 'error';
 export type CellType = 'code' | 'text';
 export type TextFormat = 'markdown' | 'html';
-export type CodeCellTab = 'short' | 'full' | 'code';
+export type CodeCellTab = 'short' | 'pseudo' | 'code';
 
 export interface CellOutput {
   type: CellOutputType;
@@ -17,7 +17,7 @@ export interface CellState {
 
   // For code cells - three synced representations
   shortDescription: string; // Brief summary with params
-  fullDescription: string;  // Detailed explanation with params
+  pseudoCode: string;       // Structured pseudo-code with steps
   code: string;
 
   // For text cells
@@ -35,7 +35,7 @@ export interface CellState {
 
   // Cache for incremental sync - tracks what was last synced
   lastSyncedShort?: string;
-  lastSyncedFull?: string;
+  lastSyncedPseudo?: string;
   lastSyncedCode?: string;
 
   // Cell height (for resizable cells)
@@ -60,7 +60,7 @@ export function createEmptyCell(id: string, cellType: CellType = 'code'): CellSt
     id,
     cellType,
     shortDescription: '',
-    fullDescription: '',
+    pseudoCode: '',
     code: '',
     textContent: '',
     textFormat: 'markdown',
@@ -71,7 +71,7 @@ export function createEmptyCell(id: string, cellType: CellType = 'code'): CellSt
     isExecuting: false,
     isSyncing: false,
     lastSyncedShort: undefined,
-    lastSyncedFull: undefined,
+    lastSyncedPseudo: undefined,
     lastSyncedCode: undefined,
     height: undefined,
     executionStartTime: undefined,
