@@ -53,6 +53,9 @@ export class KernelManager extends EventEmitter {
     resolve: () => void;
     outputs: KernelOutput[];
   }>();
+  // Mutex for serializing execute calls to prevent race conditions
+  private executeLock: Promise<void> = Promise.resolve();
+  private static readonly EXECUTE_TIMEOUT_MS = 300000; // 5 minutes
 
   constructor(pythonPath: string) {
     super();
@@ -257,12 +260,8 @@ export class KernelManager extends EventEmitter {
       const content = msg.content as ErrorContent;
       const traceback = content.traceback.join('\n');
       emitOutput({ type: 'error', content: traceback });
-    } else if (this.protocol!.isExecuteReply(msg)) {
-      const content = msg.content as ExecuteReplyContent;
-      if (content.execution_count) {
-        this.executionCount = content.execution_count;
-      }
     }
+    // Note: execute_reply is handled on the shell channel in execute(), not here
   }
 
   private async requestKernelInfo(): Promise<void> {
@@ -298,32 +297,62 @@ export class KernelManager extends EventEmitter {
   }
 
   async execute(code: string): Promise<{ msgId: string; outputs: KernelOutput[] }> {
-    if (!this.shellSocket || !this.protocol) {
-      throw new Error('Kernel not started');
-    }
-
-    const msg = this.protocol.createExecuteRequest(code);
-    const msgId = msg.header.msg_id;
-    const frames = this.protocol.serializeMessage(msg);
-
-    // Set up pending execution tracking
-    const outputs: KernelOutput[] = [];
-    const promise = new Promise<void>((resolve) => {
-      this.pendingExecutions.set(msgId, { resolve, outputs });
+    // Serialize execute calls to prevent race conditions on the socket
+    const previousLock = this.executeLock;
+    let releaseLock: () => void;
+    this.executeLock = new Promise<void>((resolve) => {
+      releaseLock = resolve;
     });
 
-    // Send the execute request
-    await this.shellSocket.send(frames);
+    try {
+      // Wait for previous execution to complete
+      await previousLock;
 
-    // Wait for shell reply
-    const reply = await this.shellSocket.receive();
-    const buffers = reply.map((f: Uint8Array) => Buffer.from(f));
-    this.protocol.parseMessage(buffers);
+      if (!this.shellSocket || !this.protocol) {
+        throw new Error('Kernel not started');
+      }
 
-    // Wait for execution to complete (idle status)
-    await promise;
+      const msg = this.protocol.createExecuteRequest(code);
+      const msgId = msg.header.msg_id;
+      const frames = this.protocol.serializeMessage(msg);
 
-    return { msgId, outputs };
+      // Set up pending execution tracking
+      const outputs: KernelOutput[] = [];
+      const idlePromise = new Promise<void>((resolve) => {
+        this.pendingExecutions.set(msgId, { resolve, outputs });
+      });
+
+      // Send the execute request
+      await this.shellSocket.send(frames);
+
+      // Wait for shell reply with timeout
+      const receivePromise = this.shellSocket.receive();
+      const timeoutPromise = new Promise<never>((_, reject) => {
+        setTimeout(() => reject(new Error('Execute timeout')), KernelManager.EXECUTE_TIMEOUT_MS);
+      });
+
+      const reply = await Promise.race([receivePromise, timeoutPromise]) as Buffer[];
+      const buffers = reply.map((f: Uint8Array) => Buffer.from(f));
+      const replyMsg = this.protocol.parseMessage(buffers);
+
+      // Extract execution_count from execute_reply on shell channel
+      if (replyMsg && this.protocol.isExecuteReply(replyMsg)) {
+        const content = replyMsg.content as ExecuteReplyContent;
+        if (content.execution_count) {
+          this.executionCount = content.execution_count;
+        }
+      }
+
+      // Wait for execution to complete (idle status) with timeout
+      const idleTimeout = new Promise<void>((_, reject) => {
+        setTimeout(() => reject(new Error('Idle timeout')), KernelManager.EXECUTE_TIMEOUT_MS);
+      });
+      await Promise.race([idlePromise, idleTimeout]);
+
+      return { msgId, outputs };
+    } finally {
+      releaseLock!();
+    }
   }
 
   async interrupt(): Promise<void> {
