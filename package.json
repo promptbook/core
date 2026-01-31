@@ -2,7 +2,6 @@
   "name": "@promptbook/core",
   "version": "0.1.0",
   "main": "./dist/index.js",
-  "module": "./dist/index.js",
   "types": "./dist/index.d.ts",
   "exports": {
     ".": {
@@ -21,20 +20,14 @@
       "types": "./dist/sync/index.d.ts"
     },
     "./kernel": {
-      "node": {
-        "import": "./dist/kernel/index.js",
-        "require": "./dist/kernel/index.js",
-        "types": "./dist/kernel/index.d.ts"
-      },
-      "default": "./dist/kernel/index.js"
+      "import": "./dist/kernel/index.js",
+      "require": "./dist/kernel/index.js",
+      "types": "./dist/kernel/index.d.ts"
     },
     "./utils": {
-      "node": {
-        "import": "./dist/utils/index.js",
-        "require": "./dist/utils/index.js",
-        "types": "./dist/utils/index.d.ts"
-      },
-      "default": "./dist/utils/index.js"
+      "import": "./dist/utils/index.js",
+      "require": "./dist/utils/index.js",
+      "types": "./dist/utils/index.d.ts"
     },
     "./types": {
       "import": "./dist/types/index.js",
