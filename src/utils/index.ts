@@ -1,6 +1,4 @@
-// packages/core/src/utils/index.ts
-// Utility exports
-
+// Re-export utilities from @promptbook/kernel (utils are now part of kernel package)
 export {
   detectMissingPackages,
   mapPackageName,
@@ -8,11 +6,11 @@ export {
   generatePipInstallCommand,
   hasPipInstalls,
   countPipInstalls,
-  type MissingPackage,
-  type PackageDetectionResult,
-} from './packageDetection';
-
-export {
   resolveWithin,
   isWithin,
-} from './paths';
+} from '@promptbook/kernel';
+
+export type {
+  MissingPackage,
+  PackageDetectionResult,
+} from '@promptbook/kernel';

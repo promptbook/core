@@ -40,14 +40,19 @@
       "import": "./dist/types/index.js",
       "require": "./dist/types/index.js",
       "types": "./dist/types/index.d.ts"
-    },
-    "./styles": "./src/ui/styles/index.css"
+    }
   },
   "scripts": {
     "build": "tsc",
     "test": "vitest run",
     "test:watch": "vitest",
     "lint": "eslint src --max-warnings 10"
+  },
+  "dependencies": {
+    "@promptbook/types": "workspace:*",
+    "@promptbook/ui": "workspace:*",
+    "@promptbook/sync": "workspace:*",
+    "@promptbook/kernel": "workspace:*"
   },
   "peerDependencies": {
     "react": "^18.2.0",
