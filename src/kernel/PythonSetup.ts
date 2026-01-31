@@ -2,16 +2,9 @@ import { spawn } from 'child_process';
 import * as fs from 'fs/promises';
 import * as path from 'path';
 import * as os from 'os';
+import type { EnvironmentType, PythonEnvironment } from '../types/kernel';
 
-export type EnvironmentType = 'venv' | 'conda' | 'system' | 'pyenv' | 'pipenv';
-
-export interface PythonEnvironment {
-  path: string;
-  name: string;
-  version: string;
-  type: EnvironmentType;
-  hasIpykernel: boolean;
-}
+export type { EnvironmentType, PythonEnvironment };
 
 async function execPython(pythonPath: string, code: string): Promise<string> {
   return new Promise((resolve, reject) => {

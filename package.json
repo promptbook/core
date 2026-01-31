@@ -21,14 +21,25 @@
       "types": "./dist/sync/index.d.ts"
     },
     "./kernel": {
-      "import": "./dist/kernel/index.js",
-      "require": "./dist/kernel/index.js",
-      "types": "./dist/kernel/index.d.ts"
+      "node": {
+        "import": "./dist/kernel/index.js",
+        "require": "./dist/kernel/index.js",
+        "types": "./dist/kernel/index.d.ts"
+      },
+      "default": "./dist/kernel/index.js"
     },
     "./utils": {
-      "import": "./dist/utils/index.js",
-      "require": "./dist/utils/index.js",
-      "types": "./dist/utils/index.d.ts"
+      "node": {
+        "import": "./dist/utils/index.js",
+        "require": "./dist/utils/index.js",
+        "types": "./dist/utils/index.d.ts"
+      },
+      "default": "./dist/utils/index.js"
+    },
+    "./types": {
+      "import": "./dist/types/index.js",
+      "require": "./dist/types/index.js",
+      "types": "./dist/types/index.d.ts"
     },
     "./styles": "./src/ui/styles/index.css"
   },
@@ -42,10 +53,14 @@
     "react": "^18.2.0",
     "react-dom": "^18.2.0",
     "@anthropic-ai/claude-agent-sdk": "^0.2.0",
+    "@anthropic-ai/sdk": "^0.30.0",
     "zeromq": "^6.0.0"
   },
   "peerDependenciesMeta": {
     "@anthropic-ai/claude-agent-sdk": {
+      "optional": true
+    },
+    "@anthropic-ai/sdk": {
       "optional": true
     },
     "zeromq": {
@@ -64,6 +79,7 @@
     "react-dom": "^18.2.0",
     "vitest": "^1.2.0",
     "@anthropic-ai/claude-agent-sdk": "^0.2.0",
+    "@anthropic-ai/sdk": "^0.30.0",
     "zeromq": "^6.0.0"
   }
 }

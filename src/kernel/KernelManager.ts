@@ -13,28 +13,9 @@ import {
   StatusContent,
   ExecuteReplyContent,
 } from './JupyterProtocol';
+import type { KernelState, KernelOutput, ConnectionInfo } from '../types/kernel';
 
-export type KernelState = 'idle' | 'busy' | 'starting' | 'dead' | 'disconnected';
-
-export interface KernelOutput {
-  type: 'stdout' | 'stderr' | 'result' | 'display' | 'error' | 'status';
-  content: string;
-  mimeType?: string;
-  executionCount?: number;
-}
-
-export interface ConnectionInfo {
-  shell_port: number;
-  iopub_port: number;
-  stdin_port: number;
-  control_port: number;
-  hb_port: number;
-  ip: string;
-  key: string;
-  transport: string;
-  signature_scheme: string;
-  kernel_name: string;
-}
+export type { KernelState, KernelOutput, ConnectionInfo };
 
 export class KernelManager extends EventEmitter {
   private process: ChildProcess | null = null;

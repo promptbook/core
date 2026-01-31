@@ -1,7 +1,8 @@
 // packages/core/src/kernel/index.ts
 // Node.js kernel implementation for Jupyter protocol
 
-export { KernelManager, type KernelState, type KernelOutput, type ConnectionInfo } from './KernelManager';
+export { KernelManager } from './KernelManager';
+export type { KernelState, KernelOutput, ConnectionInfo } from '../types/kernel';
 export {
   JupyterProtocol,
   type JupyterMessage,
@@ -12,4 +13,5 @@ export {
   type StatusContent,
   type ExecuteReplyContent,
 } from './JupyterProtocol';
-export { PythonSetup, type PythonEnvironment, type EnvironmentType } from './PythonSetup';
+export { PythonSetup } from './PythonSetup';
+export type { PythonEnvironment, EnvironmentType } from '../types/kernel';

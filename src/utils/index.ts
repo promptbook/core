@@ -11,3 +11,8 @@ export {
   type MissingPackage,
   type PackageDetectionResult,
 } from './packageDetection';
+
+export {
+  resolveWithin,
+  isWithin,
+} from './paths';
