@@ -19,6 +19,8 @@ export interface GeneratedSymbol {
 export interface CodeGenerationResult {
   code: string;
   symbols: GeneratedSymbol[];
+  /** All symbols from the entire notebook (all cells) */
+  notebookSymbols: GeneratedSymbol[];
 }
 
 export interface AiSyncContext {
@@ -106,10 +108,17 @@ const CODE_OUTPUT_EXAMPLE = `
 EXAMPLE INPUT:
 "Calculate the #average_price from the prices list and create a #price_summary function"
 
+(With earlier cell context containing: prices = [10, 20, 30, 40, 50])
+
 EXAMPLE OUTPUT:
 {
   "code": "def price_summary(prices):\\n    \\"\\"\\"Calculate summary statistics for prices.\\"\\"\\"\\n    return {\\n        'min': min(prices),\\n        'max': max(prices),\\n        'avg': sum(prices) / len(prices)\\n    }\\n\\naverage_price = sum(prices) / len(prices)\\nprint(f'Average price: {average_price:.2f}')",
   "symbols": [
+    {"name": "price_summary", "kind": "function", "type": "price_summary(prices)", "description": "Calculate summary statistics for prices"},
+    {"name": "average_price", "kind": "variable", "type": "float", "description": "The calculated average of all prices"}
+  ],
+  "notebookSymbols": [
+    {"name": "prices", "kind": "variable", "type": "list", "description": "List of 5 price values [10, 20, 30, 40, 50]"},
     {"name": "price_summary", "kind": "function", "type": "price_summary(prices)", "description": "Calculate summary statistics for prices"},
     {"name": "average_price", "kind": "variable", "type": "float", "description": "The calculated average of all prices"}
   ]
@@ -303,8 +312,16 @@ ${CODE_OUTPUT_EXAMPLE}
 IMPORTANT:
 - The "code" field must be a valid JSON string (escape newlines as \\n, quotes as \\")
 - List ALL new variables and functions in "symbols" (not imports or reused variables)
-- For variables: include type (e.g., "list", "DataFrame(100x5)", "float") and brief description
-- For functions: include signature (e.g., "calc_avg(prices)") and purpose`;
+- For variables: include type (e.g., "list", "DataFrame(100x5)", "float") and brief description of what it contains
+- For functions: include signature (e.g., "calc_avg(prices)") and purpose
+
+NOTEBOOK SYMBOLS (notebookSymbols field):
+- Analyze ALL cells in the notebook context (earlier cells + this cell)
+- List EVERY variable and function defined across ALL cells in "notebookSymbols"
+- Include symbols from earlier cells that exist in the namespace
+- For each symbol, provide a meaningful description of what it contains/does
+- Example: for "fibonacci = [1,1,2,3,5,8,13,21]" → type: "list", description: "First 8 Fibonacci numbers"
+- Example: for "df = pd.read_csv('sales.csv')" → type: "DataFrame", description: "Sales data loaded from CSV"`;
 
   if (hasExistingCode && hasChanges) {
     return `You are updating Python code based on changed instructions.

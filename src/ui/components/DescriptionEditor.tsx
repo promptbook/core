@@ -13,8 +13,10 @@ interface DescriptionEditorProps {
   minHeight?: number;
   /** Function to list files for @ autocomplete */
   listFiles?: (dirPath?: string) => Promise<{ files: FileEntry[]; cwd: string }>;
-  /** Function to get kernel symbols for # autocomplete */
+  /** Function to get kernel symbols for # autocomplete (fallback if no preloaded symbols) */
   getSymbols?: () => Promise<KernelSymbol[]>;
+  /** Pre-loaded symbols from LLM code generation - preferred over kernel symbols */
+  preloadedSymbols?: KernelSymbol[];
 }
 
 interface ParsedDescription {
@@ -55,7 +57,7 @@ function updateParameterInText(originalText: string, paramName: string, oldValue
   return originalText.replace(regex, `{{${paramName}:${newValue}}}`);
 }
 
-export function DescriptionEditor({ content, onChange, onParameterChange, placeholder = 'Enter description...', isSyncing = false, minHeight, listFiles, getSymbols }: DescriptionEditorProps) {
+export function DescriptionEditor({ content, onChange, onParameterChange, placeholder = 'Enter description...', isSyncing = false, minHeight, listFiles, getSymbols, preloadedSymbols }: DescriptionEditorProps) {
   const [editingParamId, setEditingParamId] = useState<string | null>(null);
   const [editValue, setEditValue] = useState('');
   const [isEditingText, setIsEditingText] = useState(false);
@@ -115,7 +117,7 @@ export function DescriptionEditor({ content, onChange, onParameterChange, placeh
   return (
     <div className={`description-editor ${isSyncing ? 'description-editor--syncing' : ''}`}>
       {isEditingText ? (
-        <TextEditMode textareaRef={textareaRef} value={editingTextValue} onChange={setEditingTextValue} onBlur={handleTextSubmit} onKeyDown={handleTextKeyDown} placeholder={placeholder} minHeight={minHeight} listFiles={listFiles} getSymbols={getSymbols} />
+        <TextEditMode textareaRef={textareaRef} value={editingTextValue} onChange={setEditingTextValue} onBlur={handleTextSubmit} onKeyDown={handleTextKeyDown} placeholder={placeholder} minHeight={minHeight} listFiles={listFiles} getSymbols={getSymbols} preloadedSymbols={preloadedSymbols} />
       ) : (
         <div className="description-text description-text--editable" onClick={handleTextClick} title="Click to edit" style={heightStyle}>
           <TextWithParameters parsed={parsed} editingParamId={editingParamId} editValue={editValue} onEditValueChange={setEditValue} onParameterClick={handleParameterClick} onParameterSubmit={handleParameterSubmit} onParamKeyDown={handleParamKeyDown} placeholder={placeholder} />
@@ -136,10 +138,11 @@ interface TextEditModeProps {
   minHeight?: number;
   listFiles?: (dirPath?: string) => Promise<{ files: FileEntry[]; cwd: string }>;
   getSymbols?: () => Promise<KernelSymbol[]>;
+  preloadedSymbols?: KernelSymbol[];
 }
 
-function TextEditMode({ textareaRef, value, onChange, onBlur, onKeyDown, placeholder, minHeight, listFiles, getSymbols }: TextEditModeProps) {
-  const hasAutocomplete = listFiles || getSymbols;
+function TextEditMode({ textareaRef, value, onChange, onBlur, onKeyDown, placeholder, minHeight, listFiles, getSymbols, preloadedSymbols }: TextEditModeProps) {
+  const hasAutocomplete = listFiles || getSymbols || (preloadedSymbols && preloadedSymbols.length > 0);
 
   return (
     <div className="description-text-edit">
@@ -151,6 +154,7 @@ function TextEditMode({ textareaRef, value, onChange, onBlur, onKeyDown, placeho
           onKeyDown={onKeyDown}
           listFiles={listFiles}
           getSymbols={getSymbols}
+          preloadedSymbols={preloadedSymbols}
           placeholder={placeholder}
           className="description-textarea"
           textareaRef={textareaRef}

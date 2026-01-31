@@ -1,10 +1,15 @@
 import { CellState, createEmptyCell } from './cell';
+import type { GeneratedSymbol } from '../sync/promptBuilder';
 
 export interface NotebookMetadata {
   kernel: string;
   aiProvider: string;
   created: string;
   modified: string;
+  /** Cached symbols from LLM code generation - for # autocomplete */
+  symbols?: GeneratedSymbol[];
+  /** Timestamp of last symbol update */
+  symbolsLastUpdated?: string;
 }
 
 export interface NotebookState {
@@ -23,6 +28,8 @@ export function createEmptyNotebook(): NotebookState {
       aiProvider: 'claude',
       created: new Date().toISOString(),
       modified: new Date().toISOString(),
+      symbols: [],
+      symbolsLastUpdated: undefined,
     },
     cells: [firstCell],
     activeCellId: firstCell.id,

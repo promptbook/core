@@ -26,6 +26,8 @@ interface UseCombinedAutocompleteOptions {
   onChange: (value: string) => void;
   listFiles?: (dirPath?: string) => Promise<{ files: FileEntry[]; cwd: string }>;
   getSymbols?: () => Promise<KernelSymbol[]>;
+  /** Pre-loaded symbols from LLM code generation - used instead of kernel symbols when available */
+  preloadedSymbols?: KernelSymbol[];
   textareaRef: React.RefObject<HTMLTextAreaElement>;
 }
 
@@ -231,7 +233,8 @@ function getFilterUpdate(newValue: string, cursorPos: number, triggerPos: number
 }
 
 export function useCombinedAutocomplete(opts: UseCombinedAutocompleteOptions) {
-  const { value, onChange, listFiles, getSymbols, textareaRef } = opts;
+  const { value, onChange, listFiles, getSymbols, preloadedSymbols, textareaRef } = opts;
+  const hasSymbols = !!(getSymbols || (preloadedSymbols && preloadedSymbols.length > 0));
   const [mode, setMode] = useState<AutocompleteMode>('none');
   const [items, setItems] = useState<AutocompleteItem[]>([]);
   const [selectedIndex, setSelectedIndex] = useState(0);
@@ -257,11 +260,16 @@ export function useCombinedAutocomplete(opts: UseCombinedAutocompleteOptions) {
   }, [listFiles]);
 
   const loadSymbols = useCallback(async () => {
+    // Prefer preloaded symbols from LLM over kernel symbols
+    if (preloadedSymbols && preloadedSymbols.length > 0) {
+      setItems(symbolsToItems(preloadedSymbols));
+      return;
+    }
     if (!getSymbols) return;
     setIsLoading(true);
     try { setItems(symbolsToItems(await getSymbols())); }
     catch { setItems([]); } finally { setIsLoading(false); }
-  }, [getSymbols]);
+  }, [getSymbols, preloadedSymbols]);
 
   const insertItem = useCallback((item: AutocompleteItem) => {
     const { newValue, newCursorPos } = buildInsertedText(value, triggerPosition, filterText, mode, item.label);
@@ -281,7 +289,7 @@ export function useCombinedAutocomplete(opts: UseCombinedAutocompleteOptions) {
   const handleChange = useCallback((e: React.ChangeEvent<HTMLTextAreaElement>) => {
     const newValue = e.target.value; const cursorPos = e.target.selectionStart;
     onChange(newValue);
-    const trigger = checkTrigger(newValue, cursorPos, !!listFiles, !!getSymbols);
+    const trigger = checkTrigger(newValue, cursorPos, !!listFiles, hasSymbols);
     if (trigger.triggered && trigger.mode) {
       setMode(trigger.mode); setTriggerPosition(cursorPos); setFilterText(''); setSelectedIndex(0);
       if (trigger.mode === 'file') setCurrentDir('');
@@ -293,7 +301,7 @@ export function useCombinedAutocomplete(opts: UseCombinedAutocompleteOptions) {
       const update = getFilterUpdate(newValue, cursorPos, triggerPosition);
       if (update.clear) setMode('none'); else setFilterText(update.text);
     }
-  }, [onChange, listFiles, getSymbols, mode, triggerPosition, loadFiles, loadSymbols, textareaRef]);
+  }, [onChange, listFiles, hasSymbols, mode, triggerPosition, loadFiles, loadSymbols, textareaRef]);
 
   const handleKeyDown = useCallback((e: React.KeyboardEvent<HTMLTextAreaElement>, ext?: (e: React.KeyboardEvent) => void) => {
     const handled = handleAutocompleteKeyDown(e,

@@ -16,8 +16,10 @@ interface CellProps {
   onFocus?: (cellId: string) => void;
   /** Function to list files for @ autocomplete */
   listFiles?: (dirPath?: string) => Promise<{ files: FileEntry[]; cwd: string }>;
-  /** Function to get kernel symbols for # autocomplete */
+  /** Function to get kernel symbols for # autocomplete (fallback if no preloaded symbols) */
   getSymbols?: () => Promise<KernelSymbol[]>;
+  /** Pre-loaded symbols from LLM code generation - preferred over kernel symbols */
+  preloadedSymbols?: KernelSymbol[];
 }
 
 // Utility to escape regex special characters
@@ -75,7 +77,7 @@ const ExpandIcon = () => (
   </svg>
 );
 
-export function Cell({ cell, onUpdate, onRun, onSync, isActive, onFocus, listFiles, getSymbols }: CellProps) {
+export function Cell({ cell, onUpdate, onRun, onSync, isActive, onFocus, listFiles, getSymbols, preloadedSymbols }: CellProps) {
   const [activeTab, setActiveTab] = useState<CodeCellTab>(cell.lastEditedTab || 'short');
   const cellRef = useRef<HTMLDivElement>(null);
 
@@ -156,6 +158,7 @@ export function Cell({ cell, onUpdate, onRun, onSync, isActive, onFocus, listFil
             onParameterChange={handleParameterChange}
             listFiles={listFiles}
             getSymbols={getSymbols}
+            preloadedSymbols={preloadedSymbols}
           />
           <div className={`cell-resize-handle ${isResizing ? 'cell-resize-handle--active' : ''}`} onMouseDown={handleResizeStart}>
             <div className="cell-resize-handle__grip" />
@@ -302,18 +305,19 @@ interface CellContentProps {
   onParameterChange: (paramName: string, oldValue: string, newValue: string) => void;
   listFiles?: (dirPath?: string) => Promise<{ files: FileEntry[]; cwd: string }>;
   getSymbols?: () => Promise<KernelSymbol[]>;
+  preloadedSymbols?: KernelSymbol[];
 }
 
-function CellContent({ activeTab, cell, contentHeight, onShortChange, onPseudoChange, onCodeChange, onParameterChange, listFiles, getSymbols }: CellContentProps) {
+function CellContent({ activeTab, cell, contentHeight, onShortChange, onPseudoChange, onCodeChange, onParameterChange, listFiles, getSymbols, preloadedSymbols }: CellContentProps) {
   const editorHeight = contentHeight - 32;
 
   return (
     <div className="cell-content" style={{ minHeight: `${contentHeight}px` }}>
       {activeTab === 'short' && (
-        <DescriptionEditor content={cell.shortDescription} onChange={onShortChange} onParameterChange={onParameterChange} placeholder="Brief description of what this code does..." isSyncing={cell.isSyncing} minHeight={editorHeight} listFiles={listFiles} getSymbols={getSymbols} />
+        <DescriptionEditor content={cell.shortDescription} onChange={onShortChange} onParameterChange={onParameterChange} placeholder="Brief description of what this code does..." isSyncing={cell.isSyncing} minHeight={editorHeight} listFiles={listFiles} getSymbols={getSymbols} preloadedSymbols={preloadedSymbols} />
       )}
       {activeTab === 'pseudo' && (
-        <DescriptionEditor content={cell.pseudoCode} onChange={onPseudoChange} onParameterChange={onParameterChange} placeholder="Structured pseudo-code with numbered steps (FOR, IF, WHILE...)" isSyncing={cell.isSyncing} minHeight={editorHeight} listFiles={listFiles} getSymbols={getSymbols} />
+        <DescriptionEditor content={cell.pseudoCode} onChange={onPseudoChange} onParameterChange={onParameterChange} placeholder="Structured pseudo-code with numbered steps (FOR, IF, WHILE...)" isSyncing={cell.isSyncing} minHeight={editorHeight} listFiles={listFiles} getSymbols={getSymbols} preloadedSymbols={preloadedSymbols} />
       )}
       {activeTab === 'code' && (
         <div className="cell-code-wrapper">

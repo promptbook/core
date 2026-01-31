@@ -38,7 +38,7 @@ const ChevronDownIcon = () => (
 
 // Sub-components for Find/Replace rows
 interface SearchRowProps {
-  inputRef: React.RefObject<HTMLInputElement | null>;
+  inputRef: React.RefObject<HTMLInputElement>;
   query: string;
   setQuery: (query: string) => void;
   caseSensitive: boolean;

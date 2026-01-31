@@ -11,8 +11,10 @@ export interface CombinedAutocompleteProps {
   onChange: (value: string) => void;
   /** Function to list files for @ autocomplete */
   listFiles?: (dirPath?: string) => Promise<{ files: FileEntry[]; cwd: string }>;
-  /** Function to get kernel symbols for # autocomplete */
+  /** Function to get kernel symbols for # autocomplete (fallback if no preloaded symbols) */
   getSymbols?: () => Promise<KernelSymbol[]>;
+  /** Pre-loaded symbols from LLM code generation - preferred over kernel symbols */
+  preloadedSymbols?: KernelSymbol[];
   /** Placeholder text */
   placeholder?: string;
   /** Additional class name */
@@ -32,6 +34,7 @@ export function CombinedAutocomplete({
   onChange,
   listFiles,
   getSymbols,
+  preloadedSymbols,
   placeholder,
   className,
   rows = 4,
@@ -47,6 +50,7 @@ export function CombinedAutocomplete({
     onChange,
     listFiles,
     getSymbols,
+    preloadedSymbols,
     textareaRef: textareaRefToUse,
   });
 

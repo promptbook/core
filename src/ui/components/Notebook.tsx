@@ -17,8 +17,10 @@ interface NotebookProps {
   onCellFocus?: (cellId: string) => void;
   /** Function to list files for @ autocomplete */
   listFiles?: (dirPath?: string) => Promise<{ files: FileEntry[]; cwd: string }>;
-  /** Function to get kernel symbols for # autocomplete */
+  /** Function to get kernel symbols for # autocomplete (fallback if no preloaded symbols) */
   getSymbols?: () => Promise<KernelSymbol[]>;
+  /** Pre-loaded symbols from LLM code generation - preferred over kernel symbols */
+  preloadedSymbols?: KernelSymbol[];
 }
 
 // Icons
@@ -30,7 +32,7 @@ const Icons = {
   moveDown: <svg width="14" height="14" viewBox="0 0 14 14" fill="none" stroke="currentColor" strokeWidth="1.5"><path d="M7 2v10M3 8l4 4 4-4" /></svg>,
 };
 
-export function Notebook({ notebook, onUpdate, onRunCell, onSyncCell, onAddCell, onDeleteCell, onMoveCell, activeCellId, onCellFocus, listFiles, getSymbols }: NotebookProps) {
+export function Notebook({ notebook, onUpdate, onRunCell, onSyncCell, onAddCell, onDeleteCell, onMoveCell, activeCellId, onCellFocus, listFiles, getSymbols, preloadedSymbols }: NotebookProps) {
   if (notebook.cells.length === 0) {
     return (
       <div className="notebook notebook--empty">
@@ -61,6 +63,7 @@ export function Notebook({ notebook, onUpdate, onRunCell, onSyncCell, onAddCell,
           onCellFocus={onCellFocus}
           listFiles={listFiles}
           getSymbols={getSymbols}
+          preloadedSymbols={preloadedSymbols}
         />
       ))}
       <div className="notebook-footer">
@@ -86,15 +89,16 @@ interface CellWrapperProps {
   onCellFocus?: (cellId: string) => void;
   listFiles?: (dirPath?: string) => Promise<{ files: FileEntry[]; cwd: string }>;
   getSymbols?: () => Promise<KernelSymbol[]>;
+  preloadedSymbols?: KernelSymbol[];
 }
 
-function CellWrapper({ cell, index, totalCells, activeCellId, onUpdate, onRunCell, onSyncCell, onAddCell, onDeleteCell, onMoveCell, onCellFocus, listFiles, getSymbols }: CellWrapperProps) {
+function CellWrapper({ cell, index, totalCells, activeCellId, onUpdate, onRunCell, onSyncCell, onAddCell, onDeleteCell, onMoveCell, onCellFocus, listFiles, getSymbols, preloadedSymbols }: CellWrapperProps) {
   return (
     <div className="notebook-cell-wrapper">
       {cell.cellType === 'text' ? (
         <TextCell cell={cell} onUpdate={onUpdate} isActive={activeCellId === cell.id} onFocus={onCellFocus} />
       ) : (
-        <Cell cell={cell} onUpdate={onUpdate} onRun={onRunCell} onSync={onSyncCell} isActive={activeCellId === cell.id} onFocus={onCellFocus} listFiles={listFiles} getSymbols={getSymbols} />
+        <Cell cell={cell} onUpdate={onUpdate} onRun={onRunCell} onSync={onSyncCell} isActive={activeCellId === cell.id} onFocus={onCellFocus} listFiles={listFiles} getSymbols={getSymbols} preloadedSymbols={preloadedSymbols} />
       )}
       <div className="cell-controls">
         {onMoveCell && index > 0 && (
