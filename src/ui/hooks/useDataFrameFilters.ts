@@ -3,7 +3,6 @@ import type {
   DataFrameFilter,
   DataFrameSort,
   DataFrameColumn,
-  FilterOperator,
 } from '../../types';
 
 interface UseDataFrameFiltersProps {

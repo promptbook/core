@@ -2,7 +2,7 @@ import React, { useState, useRef, useCallback, useEffect } from 'react';
 import { CellState, CodeCellTab, AIAssistanceMessage } from '../../types';
 import { DescriptionEditor } from './DescriptionEditor';
 import { CodeEditor } from './CodeEditor';
-import { OutputArea, DataFrameCallbacks } from './OutputArea';
+import { OutputArea, DataFrameCallbacks, ResearchCallbacks } from './OutputArea';
 import { AIAssistancePanel } from './AIAssistancePanel';
 import { useCellResize } from '../hooks/useCellResize';
 import { FileEntry } from './FileAutocomplete';
@@ -33,6 +33,8 @@ interface CellProps {
   aiAssistance?: AIAssistanceProps;
   /** Callbacks for DataFrame operations (required for interactive DataFrame display) */
   dataframeCallbacks?: DataFrameCallbacks;
+  /** Callbacks for research assistance features */
+  researchCallbacks?: ResearchCallbacks;
 }
 
 // Utility to escape regex special characters
@@ -90,121 +92,51 @@ const ExpandIcon = () => (
   </svg>
 );
 
-export function Cell({ cell, onUpdate, onRun, onSync, isActive, onFocus, listFiles, getSymbols, preloadedSymbols, aiAssistance, dataframeCallbacks }: CellProps) {
+export function Cell({ cell, onUpdate, onRun, onSync, isActive, onFocus, listFiles, getSymbols, preloadedSymbols, aiAssistance, dataframeCallbacks, researchCallbacks }: CellProps) {
   const [activeTab, setActiveTab] = useState<CodeCellTab>(cell.lastEditedTab || 'short');
   const [showAiPanel, setShowAiPanel] = useState(false);
   const cellRef = useRef<HTMLDivElement>(null);
-
-  // Use resize hook
   const { isResizing, contentHeight, handleResizeStart } = useCellResize({
-    initialHeight: cell.height,
-    onHeightChange: useCallback((height: number) => onUpdate(cell.id, { height }), [cell.id, onUpdate]),
+    initialHeight: cell.height, onHeightChange: useCallback((h: number) => onUpdate(cell.id, { height: h }), [cell.id, onUpdate]),
   });
 
-  // Collapse handlers
-  const handleToggleInputCollapse = useCallback(() => {
-    onUpdate(cell.id, { isInputCollapsed: !cell.isInputCollapsed });
-  }, [cell.id, cell.isInputCollapsed, onUpdate]);
+  const toggleInputCollapse = useCallback(() => onUpdate(cell.id, { isInputCollapsed: !cell.isInputCollapsed }), [cell.id, cell.isInputCollapsed, onUpdate]);
+  const toggleOutputCollapse = useCallback(() => onUpdate(cell.id, { isOutputCollapsed: !cell.isOutputCollapsed }), [cell.id, cell.isOutputCollapsed, onUpdate]);
 
-  const handleToggleOutputCollapse = useCallback(() => {
-    onUpdate(cell.id, { isOutputCollapsed: !cell.isOutputCollapsed });
-  }, [cell.id, cell.isOutputCollapsed, onUpdate]);
+  const handleTabChange = (tab: CodeCellTab) => { if (cell.isDirty && tab !== activeTab) onSync(cell.id); setActiveTab(tab); onUpdate(cell.id, { lastEditedTab: tab }); };
+  const handleShortChange = (c: string) => onUpdate(cell.id, { shortDescription: c, lastEditedTab: 'short', isDirty: true });
+  const handlePseudoChange = (c: string) => onUpdate(cell.id, { pseudoCode: c, lastEditedTab: 'pseudo', isDirty: true });
+  const handleCodeChange = (c: string) => onUpdate(cell.id, { code: c, lastEditedTab: 'code', isDirty: true });
+  const handleParamChange = (p: string, o: string, n: string) => { const u = calculateParameterUpdates(cell, p, o, n); if (Object.keys(u).length) onUpdate(cell.id, u); };
 
-  // Handle tab change with sync
-  const handleTabChange = (tab: CodeCellTab) => {
-    if (cell.isDirty && tab !== activeTab) onSync(cell.id);
-    setActiveTab(tab);
-    onUpdate(cell.id, { lastEditedTab: tab });
-  };
-
-  // Content change handlers
-  const handleShortChange = (content: string) => {
-    onUpdate(cell.id, { shortDescription: content, lastEditedTab: 'short', isDirty: true });
-  };
-
-  const handlePseudoChange = (content: string) => {
-    onUpdate(cell.id, { pseudoCode: content, lastEditedTab: 'pseudo', isDirty: true });
-  };
-
-  const handleCodeChange = (code: string) => {
-    onUpdate(cell.id, { code, lastEditedTab: 'code', isDirty: true });
-  };
-
-  // Handle parameter changes - update all tabs
-  const handleParameterChange = (paramName: string, oldValue: string, newValue: string) => {
-    const updates = calculateParameterUpdates(cell, paramName, oldValue, newValue);
-    if (Object.keys(updates).length > 0) onUpdate(cell.id, updates);
-  };
-
-  const cellClasses = `cell ${cell.isExecuting ? 'cell--executing' : ''} ${cell.isSyncing ? 'cell--syncing' : ''} ${isActive ? 'cell--active' : ''} ${cell.isInputCollapsed ? 'cell--input-collapsed' : ''}`;
+  const cls = `cell ${cell.isExecuting ? 'cell--executing' : ''} ${cell.isSyncing ? 'cell--syncing' : ''} ${isActive ? 'cell--active' : ''} ${cell.isInputCollapsed ? 'cell--input-collapsed' : ''}`;
 
   return (
-    <div ref={cellRef} className={cellClasses} onClick={() => onFocus?.(cell.id)} tabIndex={0} onFocus={() => onFocus?.(cell.id)}>
-      <CellToolbar
-        activeTab={activeTab}
-        onTabChange={handleTabChange}
-        isDirty={cell.isDirty}
-        isSyncing={cell.isSyncing}
-        isExecuting={cell.isExecuting}
-        onSync={() => onSync(cell.id)}
-        onRun={() => onRun(cell.id)}
-        executionStartTime={cell.executionStartTime}
-        lastExecutionTime={cell.lastExecutionTime}
-        lastExecutionSuccess={cell.lastExecutionSuccess}
-        executionCount={cell.executionCount}
-        isInputCollapsed={cell.isInputCollapsed}
-        onToggleInputCollapse={handleToggleInputCollapse}
-        isSyncingInBackground={cell.isSyncingInBackground}
-        backgroundSyncError={cell.backgroundSyncError}
-        showAiPanel={showAiPanel}
-        onToggleAiPanel={() => setShowAiPanel(!showAiPanel)}
-        hasAiAssistance={!!aiAssistance}
-      />
+    <div ref={cellRef} className={cls} onClick={() => onFocus?.(cell.id)} tabIndex={0} onFocus={() => onFocus?.(cell.id)}>
+      <CellToolbar activeTab={activeTab} onTabChange={handleTabChange} isDirty={cell.isDirty} isSyncing={cell.isSyncing} isExecuting={cell.isExecuting}
+        onSync={() => onSync(cell.id)} onRun={() => onRun(cell.id)} executionStartTime={cell.executionStartTime} lastExecutionTime={cell.lastExecutionTime}
+        lastExecutionSuccess={cell.lastExecutionSuccess} executionCount={cell.executionCount} isInputCollapsed={cell.isInputCollapsed} onToggleInputCollapse={toggleInputCollapse}
+        isSyncingInBackground={cell.isSyncingInBackground} backgroundSyncError={cell.backgroundSyncError} showAiPanel={showAiPanel}
+        onToggleAiPanel={() => setShowAiPanel(!showAiPanel)} hasAiAssistance={!!aiAssistance} />
       {cell.isInputCollapsed ? (
-        <div className="cell-collapsed-preview" onClick={handleToggleInputCollapse}>
+        <div className="cell-collapsed-preview" onClick={toggleInputCollapse}>
           <span className="cell-collapsed-preview__text">{getCollapsedPreview(activeTab, cell)}</span>
           <span className="cell-collapsed-preview__hint">Click to expand</span>
         </div>
-      ) : (
-        <>
-          <CellContent
-            activeTab={activeTab}
-            cell={cell}
-            contentHeight={contentHeight}
-            onShortChange={handleShortChange}
-            onPseudoChange={handlePseudoChange}
-            onCodeChange={handleCodeChange}
-            onParameterChange={handleParameterChange}
-            listFiles={listFiles}
-            getSymbols={getSymbols}
-            preloadedSymbols={preloadedSymbols}
-            showAiPanel={showAiPanel}
-            onCloseAiPanel={() => setShowAiPanel(false)}
-            aiAssistance={aiAssistance}
-          />
-          <div className={`cell-resize-handle ${isResizing ? 'cell-resize-handle--active' : ''}`} onMouseDown={handleResizeStart}>
-            <div className="cell-resize-handle__grip" />
-          </div>
-        </>
-      )}
+      ) : (<>
+        <CellContent activeTab={activeTab} cell={cell} contentHeight={contentHeight} onShortChange={handleShortChange} onPseudoChange={handlePseudoChange}
+          onCodeChange={handleCodeChange} onParameterChange={handleParamChange} listFiles={listFiles} getSymbols={getSymbols} preloadedSymbols={preloadedSymbols}
+          showAiPanel={showAiPanel} onCloseAiPanel={() => setShowAiPanel(false)} aiAssistance={aiAssistance} />
+        <div className={`cell-resize-handle ${isResizing ? 'cell-resize-handle--active' : ''}`} onMouseDown={handleResizeStart}><div className="cell-resize-handle__grip" /></div>
+      </>)}
       {cell.outputs.length > 0 && (
         <div className={`cell-output ${cell.isOutputCollapsed ? 'cell-output--collapsed' : ''}`}>
-          <div className="cell-output-header" onClick={handleToggleOutputCollapse}>
-            <span className="cell-output-header__icon">
-              {cell.isOutputCollapsed ? <ExpandIcon /> : <CollapseIcon />}
-            </span>
-            <span className="cell-output-header__label">
-              Output {cell.executionCount ? `[${cell.executionCount}]` : ''}
-            </span>
-            {cell.isOutputCollapsed && (
-              <span className="cell-output-header__preview">
-                {cell.outputs[0]?.content.slice(0, 50)}...
-              </span>
-            )}
+          <div className="cell-output-header" onClick={toggleOutputCollapse}>
+            <span className="cell-output-header__icon">{cell.isOutputCollapsed ? <ExpandIcon /> : <CollapseIcon />}</span>
+            <span className="cell-output-header__label">Output {cell.executionCount ? `[${cell.executionCount}]` : ''}</span>
+            {cell.isOutputCollapsed && <span className="cell-output-header__preview">{cell.outputs[0]?.content.slice(0, 50)}...</span>}
           </div>
-          {!cell.isOutputCollapsed && (
-            <OutputArea outputs={cell.outputs} dataframeCallbacks={dataframeCallbacks} />
-          )}
+          {!cell.isOutputCollapsed && <OutputArea outputs={cell.outputs} dataframeCallbacks={dataframeCallbacks} code={cell.code} description={cell.shortDescription} researchCallbacks={researchCallbacks} />}
         </div>
       )}
     </div>

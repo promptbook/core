@@ -6,6 +6,8 @@ import type {
   DataFramePagination as PaginationType,
 } from '../../types';
 import { DataFrameViewer } from './DataFrameViewer';
+import { OutputActions, type ResearchActionType } from './OutputActions';
+import { ResearchResultsPanel, type Paper } from './ResearchResultsPanel';
 
 /** Callbacks for DataFrame operations */
 export interface DataFrameCallbacks {
@@ -31,6 +33,20 @@ export interface DataFrameCallbacks {
     dtype: DataFrameColumnType
   ) => Promise<DataFrameMetadata | null>;
   onDeleteColumn: (dfId: string, column: string) => Promise<DataFrameMetadata | null>;
+}
+
+/** Callbacks for research assistance features */
+export interface ResearchCallbacks {
+  /** Explain the output */
+  onExplain: (output: string, code: string) => Promise<string>;
+  /** Suggest next analysis steps */
+  onSuggestNext: (output: string, code: string, description: string) => Promise<string>;
+  /** Debug an error */
+  onDebug: (error: string, code: string) => Promise<string>;
+  /** Find related papers */
+  onFindPapers: (output: string, code: string) => Promise<Paper[]>;
+  /** Apply a suggested code fix */
+  onApplyFix?: (code: string) => void;
 }
 
 interface ResizableImageProps {
@@ -119,147 +135,138 @@ interface OutputAreaProps {
   outputs: CellOutput[];
   imageWidths?: Record<number, number>;
   onImageWidthChange?: (index: number, width: number) => void;
-  /** Optional callbacks for DataFrame operations. Required if rendering DataFrames. */
   dataframeCallbacks?: DataFrameCallbacks;
+  code?: string;
+  description?: string;
+  researchCallbacks?: ResearchCallbacks;
 }
 
-function renderOutput(
-  output: CellOutput,
-  index: number,
+/** Render display/result output (images, dataframes, html, json) */
+function renderDisplayOutput(
+  output: CellOutput, index: number,
   imageWidths?: Record<number, number>,
   onImageWidthChange?: (index: number, width: number) => void,
   dataframeCallbacks?: DataFrameCallbacks
 ): React.ReactNode {
-  const { type, content, mimeType } = output;
-
-  // Handle different MIME types for display outputs
-  if (type === 'display' || type === 'result') {
-    if (mimeType === 'image/png' || mimeType === 'image/jpeg' || mimeType === 'image/gif') {
-      return (
-        <div key={index} className="output-item output-item--image">
-          <ResizableImage
-            src={`data:${mimeType};base64,${content}`}
-            alt="Output"
-            initialWidth={imageWidths?.[index]}
-            onWidthChange={(width) => onImageWidthChange?.(index, width)}
-          />
-        </div>
-      );
-    }
-
-    // Handle DataFrame MIME type - prioritize over text/html for pandas DataFrames
-    if (mimeType === DATAFRAME_MIME_TYPE && dataframeCallbacks) {
-      try {
-        const metadata: DataFrameMetadata = JSON.parse(content);
-        return (
-          <DataFrameViewer
-            key={index}
-            metadata={metadata}
-            onGetPage={dataframeCallbacks.onGetPage}
-            onEditCell={dataframeCallbacks.onEditCell}
-            onAddRow={dataframeCallbacks.onAddRow}
-            onDeleteRow={dataframeCallbacks.onDeleteRow}
-            onAddColumn={dataframeCallbacks.onAddColumn}
-            onDeleteColumn={dataframeCallbacks.onDeleteColumn}
-          />
-        );
-      } catch {
-        // Fall back to JSON display if parsing fails
-        return (
-          <div key={index} className="output-item output-item--json">
-            <pre>{content}</pre>
-          </div>
-        );
-      }
-    }
-
-    if (mimeType === 'text/html') {
-      return (
-        <div
-          key={index}
-          className="output-item output-item--html"
-          dangerouslySetInnerHTML={{ __html: content }}
-        />
-      );
-    }
-
-    if (mimeType === 'application/json') {
-      try {
-        const formatted = JSON.stringify(JSON.parse(content), null, 2);
-        return (
-          <div key={index} className="output-item output-item--json">
-            <pre>{formatted}</pre>
-          </div>
-        );
-      } catch {
-        // Fall through to plain text
-      }
-    }
-
-    // Default: render as plain text
+  const { content, mimeType } = output;
+  if (mimeType === 'image/png' || mimeType === 'image/jpeg' || mimeType === 'image/gif') {
     return (
-      <div key={index} className="output-item output-item--result">
-        <pre>{content}</pre>
+      <div key={index} className="output-item output-item--image">
+        <ResizableImage src={`data:${mimeType};base64,${content}`} alt="Output"
+          initialWidth={imageWidths?.[index]} onWidthChange={(w) => onImageWidthChange?.(index, w)} />
       </div>
     );
   }
-
-  // Handle stream outputs (stdout/stderr)
-  if (type === 'stdout') {
-    return (
-      <div key={index} className="output-item output-item--stdout">
-        <pre>{content}</pre>
-      </div>
-    );
+  if (mimeType === DATAFRAME_MIME_TYPE && dataframeCallbacks) {
+    try {
+      const metadata: DataFrameMetadata = JSON.parse(content);
+      return <DataFrameViewer key={index} metadata={metadata} onGetPage={dataframeCallbacks.onGetPage}
+        onEditCell={dataframeCallbacks.onEditCell} onAddRow={dataframeCallbacks.onAddRow}
+        onDeleteRow={dataframeCallbacks.onDeleteRow} onAddColumn={dataframeCallbacks.onAddColumn}
+        onDeleteColumn={dataframeCallbacks.onDeleteColumn} />;
+    } catch { return <div key={index} className="output-item output-item--json"><pre>{content}</pre></div>; }
   }
-
-  if (type === 'stderr') {
-    return (
-      <div key={index} className="output-item output-item--stderr">
-        <pre>{content}</pre>
-      </div>
-    );
+  if (mimeType === 'text/html') {
+    return <div key={index} className="output-item output-item--html" dangerouslySetInnerHTML={{ __html: content }} />;
   }
-
-  // Handle errors with ANSI color stripping and formatting
-  if (type === 'error') {
-    // Strip ANSI escape codes for cleaner display
-    const cleanContent = content.replace(
-      // eslint-disable-next-line no-control-regex
-      /\x1b\[[0-9;]*[a-zA-Z]/g,
-      ''
-    );
-
-    return (
-      <div key={index} className="output-item output-item--error">
-        <pre>{cleanContent}</pre>
-      </div>
-    );
+  if (mimeType === 'application/json') {
+    try {
+      return <div key={index} className="output-item output-item--json"><pre>{JSON.stringify(JSON.parse(content), null, 2)}</pre></div>;
+    } catch { /* fall through */ }
   }
-
-  // Default fallback
-  return (
-    <div key={index} className={`output-item output-item--${type}`}>
-      <pre>{content}</pre>
-    </div>
-  );
+  return <div key={index} className="output-item output-item--result"><pre>{content}</pre></div>;
 }
 
-export function OutputArea({
-  outputs,
-  imageWidths,
-  onImageWidthChange,
-  dataframeCallbacks,
-}: OutputAreaProps) {
-  if (outputs.length === 0) {
-    return null;
+/** Strip ANSI escape codes from error output */
+// eslint-disable-next-line no-control-regex
+const stripAnsi = (str: string) => str.replace(/\x1b\[[0-9;]*[a-zA-Z]/g, '');
+
+/** Render a single output item */
+function renderOutput(
+  output: CellOutput, index: number, imageWidths?: Record<number, number>,
+  onImageWidthChange?: (index: number, width: number) => void, dataframeCallbacks?: DataFrameCallbacks
+): React.ReactNode {
+  const { type, content } = output;
+  if (type === 'display' || type === 'result') {
+    return renderDisplayOutput(output, index, imageWidths, onImageWidthChange, dataframeCallbacks);
   }
+  if (type === 'stdout') return <div key={index} className="output-item output-item--stdout"><pre>{content}</pre></div>;
+  if (type === 'stderr') return <div key={index} className="output-item output-item--stderr"><pre>{content}</pre></div>;
+  if (type === 'error') return <div key={index} className="output-item output-item--error"><pre>{stripAnsi(content)}</pre></div>;
+  return <div key={index} className={`output-item output-item--${type}`}><pre>{content}</pre></div>;
+}
+
+/** Hook for research action state and handlers */
+function useResearchActions(
+  outputs: CellOutput[], code: string | undefined, description: string | undefined,
+  researchCallbacks: ResearchCallbacks | undefined
+) {
+  const [activeAction, setActiveAction] = useState<ResearchActionType | null>(null);
+  const [isLoading, setIsLoading] = useState(false);
+  const [panelContent, setPanelContent] = useState<string | undefined>();
+  const [panelPapers, setPanelPapers] = useState<Paper[] | undefined>();
+  const [panelError, setPanelError] = useState<string | undefined>();
+  const outputContent = outputs.map(o => o.content).join('\n');
+
+  const closePanel = useCallback(() => {
+    setActiveAction(null); setPanelContent(undefined); setPanelPapers(undefined); setPanelError(undefined);
+  }, []);
+
+  const runAction = useCallback(async (
+    action: ResearchActionType,
+    fn: () => Promise<string | Paper[]>
+  ) => {
+    setActiveAction(action); setIsLoading(true); setPanelError(undefined);
+    try {
+      const result = await fn();
+      if (Array.isArray(result)) setPanelPapers(result); else setPanelContent(result);
+    } catch (err) { setPanelError(err instanceof Error ? err.message : 'Action failed'); }
+    finally { setIsLoading(false); }
+  }, []);
+
+  const handleExplain = useCallback(() => {
+    if (researchCallbacks?.onExplain) runAction('explain', () => researchCallbacks.onExplain(outputContent, code || ''));
+  }, [researchCallbacks, runAction, outputContent, code]);
+
+  const handleSuggestNext = useCallback(() => {
+    if (researchCallbacks?.onSuggestNext) runAction('suggest', () => researchCallbacks.onSuggestNext(outputContent, code || '', description || ''));
+  }, [researchCallbacks, runAction, outputContent, code, description]);
+
+  const handleDebug = useCallback(() => {
+    if (researchCallbacks?.onDebug) {
+      const errOut = outputs.filter(o => o.type === 'error').map(o => o.content).join('\n');
+      runAction('debug', () => researchCallbacks.onDebug(errOut, code || ''));
+    }
+  }, [researchCallbacks, runAction, outputs, code]);
+
+  const handleFindPapers = useCallback(() => {
+    if (researchCallbacks?.onFindPapers) runAction('papers', () => researchCallbacks.onFindPapers(outputContent, code || ''));
+  }, [researchCallbacks, runAction, outputContent, code]);
+
+  const handleApplyFix = useCallback((fixedCode: string) => {
+    researchCallbacks?.onApplyFix?.(fixedCode); closePanel();
+  }, [researchCallbacks, closePanel]);
+
+  return { activeAction, isLoading, panelContent, panelPapers, panelError, closePanel,
+    handleExplain, handleSuggestNext, handleDebug, handleFindPapers, handleApplyFix };
+}
+
+export function OutputArea({ outputs, imageWidths, onImageWidthChange, dataframeCallbacks, code, description, researchCallbacks }: OutputAreaProps) {
+  const research = useResearchActions(outputs, code, description, researchCallbacks);
+  const hasError = outputs.some(o => o.type === 'error');
+  const hasOutput = outputs.length > 0;
+  if (!hasOutput) return null;
+  const showResearch = researchCallbacks && hasOutput;
 
   return (
     <div className="output-area">
-      {outputs.map((output, index) =>
-        renderOutput(output, index, imageWidths, onImageWidthChange, dataframeCallbacks)
-      )}
+      {outputs.map((output, index) => renderOutput(output, index, imageWidths, onImageWidthChange, dataframeCallbacks))}
+      {showResearch && <OutputActions hasOutput={hasOutput} hasError={hasError} onExplain={research.handleExplain}
+        onSuggestNext={research.handleSuggestNext} onDebug={research.handleDebug} onFindPapers={research.handleFindPapers}
+        isLoading={research.isLoading} activeAction={research.activeAction} />}
+      {research.activeAction && <ResearchResultsPanel type={research.activeAction} content={research.panelContent}
+        papers={research.panelPapers} isLoading={research.isLoading} error={research.panelError}
+        onClose={research.closePanel} onApplyFix={research.activeAction === 'debug' ? research.handleApplyFix : undefined} />}
     </div>
   );
 }

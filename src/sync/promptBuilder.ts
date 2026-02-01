@@ -1,5 +1,11 @@
-// packages/sync/src/promptBuilder.ts
 // Shared AI sync prompt building logic
+import {
+  CODE_OUTPUT_EXAMPLE,
+  SHORT_TO_PSEUDO_EXAMPLES,
+  PSEUDO_TO_SHORT_EXAMPLES,
+  SHORT_GUIDELINES,
+  PSEUDO_GUIDELINES,
+} from './promptConstants';
 
 // Re-export types from @promptbook/types
 export type {
@@ -99,27 +105,6 @@ export function extractHashMentions(text: string): string[] {
   }
   return [...new Set(mentions)]; // Remove duplicates
 }
-
-// Few-shot example for structured code output
-const CODE_OUTPUT_EXAMPLE = `
-EXAMPLE INPUT:
-"Calculate the #average_price from the prices list and create a #price_summary function"
-
-(With earlier cell context containing: prices = [10, 20, 30, 40, 50])
-
-EXAMPLE OUTPUT:
-{
-  "code": "def price_summary(prices):\\n    \\"\\"\\"Calculate summary statistics for prices.\\"\\"\\"\\n    return {\\n        'min': min(prices),\\n        'max': max(prices),\\n        'avg': sum(prices) / len(prices)\\n    }\\n\\naverage_price = sum(prices) / len(prices)\\nprint(f'Average price: {average_price:.2f}')",
-  "symbols": [
-    {"name": "price_summary", "kind": "function", "type": "price_summary(prices)", "description": "Calculate summary statistics for prices"},
-    {"name": "average_price", "kind": "variable", "type": "float", "description": "The calculated average of all prices"}
-  ],
-  "notebookSymbols": [
-    {"name": "prices", "kind": "variable", "type": "list", "description": "List of 5 price values [10, 20, 30, 40, 50]"},
-    {"name": "price_summary", "kind": "function", "type": "price_summary(prices)", "description": "Calculate summary statistics for prices"},
-    {"name": "average_price", "kind": "variable", "type": "float", "description": "The calculated average of all prices"}
-  ]
-}`;
 
 /**
  * Build a prompt for AI sync based on the direction and context.
@@ -293,15 +278,16 @@ OUTPUT (with parameters converted):`;
 }
 
 function buildShortToPseudoPrompt(content: string, existingCounterpart?: string): string {
+  const existingRef = existingCounterpart
+    ? `EXISTING DETAILED INSTRUCTIONS (use as reference for style):\n${existingCounterpart}\n\n`
+    : '';
+
   return `Convert this short description into detailed instructions that explain the logic step by step.
 
 SHORT DESCRIPTION:
 ${content}
 
-${existingCounterpart ? `EXISTING DETAILED INSTRUCTIONS (use as reference for style):
-${existingCounterpart}
-
-` : ''}STYLE GUIDE:
+${existingRef}STYLE GUIDE:
 Write in natural language but include logic hints. Describe what happens step by step,
 mentioning loops and conditions in plain English. Reference variables with #name format.
 Keep it readable like explaining to a colleague, but precise enough to understand the algorithm.
@@ -316,53 +302,26 @@ RULES:
 - IMPORTANT: Always write in ENGLISH
 
 PARAMETER DETECTION:
-Find values EXPLICITLY WRITTEN by the user that would become hardcoded literals in code, and convert them to {{name:value}} format.
+Find values EXPLICITLY WRITTEN by the user that would become hardcoded literals in code.
+Convert them to {{name:value}}: Numbers, files, dates, and strings become parameters.
 
-If the user writes a specific value, it should become a parameter:
-- Numbers: "first 20" → {{count:20}}, "above 100" → {{threshold:100}}
-- Files: "load sales.csv" → {{file:sales.csv}}
-- Dates: "from January 2024" → {{start_date:January 2024}}
-- Strings: "column price" → {{column:price}}
-
-Rule: If the user explicitly wrote a value, it becomes a parameter.
-
-FEW-SHOT EXAMPLES:
-
-Example 1:
-Input: "Generate the first 20 Fibonacci numbers, store in #fib list, and print the sequence"
-Output: "Initialize #fib with [0, 1]. Loop {{count:20}} - 2 times, each time appending the sum of the last two elements. Print the final #fib list containing all {{count:20}} Fibonacci numbers."
-
-Example 2:
-Input: "Load sales.csv, filter by 100, calculate #average_price"
-Output: "Load {{file:sales.csv}} into #df. Filter to keep only rows where price exceeds {{threshold:100}}, storing results in #filtered. Calculate #average_price as the mean of the filtered prices."
-
-Example 3:
-Input: "Create a function #is_prime that checks if a number is prime"
-Output: "Define #is_prime(n) that returns False if n < 2. Loop from 2 to sqrt(n), returning False if any number divides n evenly. Return True if no divisors found."
-
-Example 4:
-Input: "Sort #users by age descending, take top 10, extract their names into #top_names"
-Output: "Sort #users list by age in descending order. Take the first {{limit:10}} entries. Extract just the name field from each into #top_names list."
-
-Example 5:
-Input: "Read data from /data/input.json, filter entries from 2024-01-01"
-Output: "Read data from {{file:/data/input.json}}. Filter entries where date is after {{start_date:2024-01-01}}."
+${SHORT_TO_PSEUDO_EXAMPLES}
 
 Return ONLY the detailed instructions, no actual code or markdown fences.`;
 }
 
 function buildPseudoToShortPrompt(content: string, existingCounterpart?: string): string {
-  // Use language from existing description if available, otherwise default to English
   const langHint = existingCounterpart ? getLanguageHint(existingCounterpart) : '';
+  const existingRef = existingCounterpart
+    ? `EXISTING DESCRIPTION (use as reference):\n${existingCounterpart}\n\n`
+    : '';
+
   return `Convert these detailed instructions into a concise natural language description.
 
 DETAILED INSTRUCTIONS:
 ${content}
 
-${existingCounterpart ? `EXISTING DESCRIPTION (use as reference):
-${existingCounterpart}
-
-` : ''}RULES:
+${existingRef}RULES:
 1. Summarize the logic at a high level - preserve all key steps
 2. PRESERVE key domain terms (fibonacci, sales, prices, average, etc.)
 3. Keep all #variable and #function mentions
@@ -371,19 +330,7 @@ ${existingCounterpart}
 6. Do NOT add implementation details (like "iterative", "recursive", "using a loop")
 7. Can be multiple sentences if needed to capture the full intent${langHint}
 
-FEW-SHOT EXAMPLES:
-
-Example 1:
-Input: "Initialize #fib with [0, 1]. Loop {{count:20}} - 2 times, each time appending the sum of the last two elements. Print the final #fib list."
-Output: "Generate the first {{count:20}} Fibonacci numbers, store in #fib, and print the sequence"
-
-Example 2:
-Input: "Load sales data from CSV into #df. Filter to keep only rows where price exceeds {{threshold:100}}, storing results in #filtered. Calculate #average_price as the mean of the filtered prices."
-Output: "Load sales CSV, filter where price > {{threshold:100}}, calculate #average_price"
-
-Example 3:
-Input: "Define #is_prime(n) that returns False if n < 2. Loop from 2 to sqrt(n), returning False if any number divides n evenly. Return True if no divisors found."
-Output: "Create a function #is_prime that checks if a number is prime"
+${PSEUDO_TO_SHORT_EXAMPLES}
 
 BAD (added implementation details):
 Input: "Initialize #fib with [0, 1]. Loop to generate numbers."
@@ -497,85 +444,8 @@ function buildToDescriptionPrompt(opts: ToDescriptionPromptOptions): string {
   // For short descriptions, preserve language from existing counterpart if available
   const langHint = isToShort && existingCounterpart ? getLanguageHint(existingCounterpart) : '';
 
-  const shortGuidelines = `
-GUIDELINES FOR INSTRUCTIONS:
-- Describe what the code does so a reader understands without reading the code
-- PRESERVE all key steps and domain terms (fibonacci, sales, prices, average, etc.)
-- Don't mention "Python" or "code" - it's obvious
-- CONVERT literal numeric values from code into {{name:value}} parameters
-- Use #variable_name to reference important variables defined in code
-- Do NOT add implementation details (like "iterative", "recursive", "using a loop")
-- Can be multiple sentences if needed to capture the full intent
-
-PARAMETER DETECTION:
-Find hardcoded literals in the code that represent configurable values, and convert them to {{name:value}}:
-- Numbers: range(20) → {{count:20}}, > 100 → {{threshold:100}}
-- Files: 'sales.csv' → {{file:sales.csv}}
-- Dates: '2024-01-01' → {{date:2024-01-01}}
-- Strings: column names, usernames, any hardcoded string that's a configuration value
-
-EXAMPLES:
-Code: \`fib = [0, 1]; [fib.append(fib[-1] + fib[-2]) for _ in range(18)]; print(fib)\`
-Output: "List the first {{count:20}} Fibonacci numbers, store in #fib, and print it"
-
-Code: \`df = pd.read_csv('sales.csv'); filtered = df[df['price'] > 100]; avg = filtered['price'].mean()\`
-Output: "Load {{file:sales.csv}}, filter rows where price > {{threshold:100}}, calculate the average price"
-
-Code: \`df = df[df['date'] >= '2024-01-01']\`
-Output: "Filter #df where date >= {{start_date:2024-01-01}}"
-
-BAD (didn't parameterize):
-Code: \`pd.read_csv('data.csv')\`
-Output: "Load data.csv" ← WRONG: should be "Load {{file:data.csv}}"
-
-BAD (added implementation details):
-Code: \`for i in range(20): fib.append(...)\`
-Output: "Generate Fibonacci using an iterative loop" ← WRONG: added "iterative loop"${langHint}`;
-
-  const pseudoGuidelines = `
-GUIDELINES FOR DETAILED INSTRUCTIONS:
-Write in natural language but include logic hints. Describe what happens step by step,
-mentioning loops and conditions in plain English. Reference variables with #name format.
-Keep it readable like explaining to a colleague, but precise enough to understand the algorithm.
-
-RULES:
-- Write in flowing sentences, not formal pseudo-code keywords
-- Mention iterations as "loop through" or "for each" not "FOR"
-- Mention conditions as "if/when" not "IF"
-- CONVERT literal numeric values from code into {{name:value}} parameters
-- Use #variable_name to reference variables defined in code
-- Use #function_name to reference functions defined in code
-- IMPORTANT: Always write in ENGLISH
-
-PARAMETER DETECTION:
-Find hardcoded literals in the code that represent configurable values, and convert them to {{name:value}}:
-- Numbers: range(20) → {{count:20}}, > 100 → {{threshold:100}}
-- Files: 'sales.csv' → {{file:sales.csv}}
-- Dates: '2024-01-01' → {{date:2024-01-01}}
-- Strings: column names, usernames, any hardcoded configuration value
-
-FEW-SHOT EXAMPLES:
-
-Code: \`fib = [0, 1]
-for _ in range(18):
-    fib.append(fib[-1] + fib[-2])
-print(fib)\`
-Output: "Initialize #fib with [0, 1]. Loop {{count:20}} - 2 times, each time appending the sum of the last two elements. Print the final #fib list containing all {{count:20}} Fibonacci numbers."
-
-Code: \`def calc_fibonacci(n):
-    fib = [0, 1]
-    for i in range(2, n):
-        fib.append(fib[-1] + fib[-2])
-    return fib
-fibonacci = calc_fibonacci(10)\`
-Output: "Define #calc_fibonacci(n) that initializes #fib with [0, 1], then loops from 2 to n appending the sum of the last two values. Call #calc_fibonacci with {{count:10}} and store the result in #fibonacci."
-
-Code: \`df = pd.read_csv('sales.csv')
-filtered = df[df['price'] > 100]
-avg = filtered['price'].mean()\`
-Output: "Load {{file:sales.csv}} into #df. Filter to keep only rows where price exceeds {{threshold:100}}, storing in #filtered. Calculate #avg as the mean of the filtered prices."`;
-
-  const guidelines = isToShort ? shortGuidelines : pseudoGuidelines;
+  // Use imported constants and append language hint for short descriptions
+  const guidelines = isToShort ? `${SHORT_GUIDELINES}${langHint}` : PSEUDO_GUIDELINES;
   const lengthHint = isToShort ? 'Capture the full intent - use multiple sentences if needed.' : 'Write flowing sentences that explain the logic step by step.';
   const typeName = isToShort ? 'SHORT' : 'DETAILED INSTRUCTIONS';
 

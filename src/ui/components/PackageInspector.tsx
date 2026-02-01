@@ -86,13 +86,27 @@ function PackageRow({ pkg, onUninstall, isUninstalling }: PackageRowProps) {
   );
 }
 
-export function PackageInspector({
-  isOpen,
-  onClose,
-  onRefresh,
-  onInstall,
-  onUninstall,
-}: PackageInspectorProps) {
+interface InstallInputProps { value: string; onChange: (v: string) => void; onInstall: () => void; isInstalling: boolean; }
+function InstallInput({ value, onChange, onInstall, isInstalling }: InstallInputProps) {
+  return (
+    <div className="package-inspector__install">
+      <input type="text" placeholder="Package name to install..." value={value} onChange={(e) => onChange(e.target.value)}
+        onKeyDown={(e) => { if (e.key === 'Enter' && !isInstalling) onInstall(); }} disabled={isInstalling} />
+      <button onClick={onInstall} disabled={isInstalling || !value.trim()} className="package-inspector__install-btn" title="Install package">
+        {isInstalling ? <span className="package-inspector__spinner" /> : <PlusIcon />}
+      </button>
+    </div>
+  );
+}
+
+interface PackageListProps { packages: InstalledPackage[]; filtered: InstalledPackage[]; isLoading: boolean; uninstallingPkg: string | null; onUninstall: (name: string) => void; }
+function PackageList({ packages, filtered, isLoading, uninstallingPkg, onUninstall }: PackageListProps) {
+  if (packages.length === 0) return <div className="package-inspector__empty">{isLoading ? 'Loading...' : 'No packages installed'}</div>;
+  if (filtered.length === 0) return <div className="package-inspector__empty">No matching packages</div>;
+  return <div className="package-inspector__list">{filtered.map((pkg) => <PackageRow key={pkg.name} pkg={pkg} onUninstall={onUninstall} isUninstalling={uninstallingPkg === pkg.name} />)}</div>;
+}
+
+export function PackageInspector({ isOpen, onClose, onRefresh, onInstall, onUninstall }: PackageInspectorProps) {
   const [packages, setPackages] = useState<InstalledPackage[]>([]);
   const [isLoading, setIsLoading] = useState(false);
   const [filter, setFilter] = useState('');
@@ -102,76 +116,26 @@ export function PackageInspector({
   const [error, setError] = useState<string | null>(null);
 
   const handleRefresh = useCallback(async () => {
-    setIsLoading(true);
-    setError(null);
-    try {
-      const pkgs = await onRefresh();
-      setPackages(pkgs);
-    } catch (err) {
-      setError('Failed to load packages');
-      console.error('Failed to fetch packages:', err);
-    } finally {
-      setIsLoading(false);
-    }
+    setIsLoading(true); setError(null);
+    try { setPackages(await onRefresh()); } catch { setError('Failed to load packages'); } finally { setIsLoading(false); }
   }, [onRefresh]);
 
-  // Refresh on open
-  useEffect(() => {
-    if (isOpen) {
-      handleRefresh();
-    }
-  }, [isOpen, handleRefresh]);
+  useEffect(() => { if (isOpen) handleRefresh(); }, [isOpen, handleRefresh]);
 
   const handleInstall = useCallback(async () => {
-    const packageName = installInput.trim();
-    if (!packageName) return;
-
-    setIsInstalling(true);
-    setError(null);
-    try {
-      const result = await onInstall(packageName);
-      if (result.success) {
-        setInstallInput('');
-        await handleRefresh();
-      } else {
-        setError(result.error || 'Installation failed');
-      }
-    } catch (err) {
-      setError('Installation failed');
-      console.error('Failed to install package:', err);
-    } finally {
-      setIsInstalling(false);
-    }
+    const pkg = installInput.trim(); if (!pkg) return;
+    setIsInstalling(true); setError(null);
+    try { const r = await onInstall(pkg); if (r.success) { setInstallInput(''); await handleRefresh(); } else setError(r.error || 'Installation failed'); }
+    catch { setError('Installation failed'); } finally { setIsInstalling(false); }
   }, [installInput, onInstall, handleRefresh]);
 
-  const handleUninstall = useCallback(async (packageName: string) => {
-    setUninstallingPackage(packageName);
-    setError(null);
-    try {
-      const result = await onUninstall(packageName);
-      if (result.success) {
-        await handleRefresh();
-      } else {
-        setError(result.error || 'Uninstall failed');
-      }
-    } catch (err) {
-      setError('Uninstall failed');
-      console.error('Failed to uninstall package:', err);
-    } finally {
-      setUninstallingPackage(null);
-    }
+  const handleUninstall = useCallback(async (pkg: string) => {
+    setUninstallingPackage(pkg); setError(null);
+    try { const r = await onUninstall(pkg); if (r.success) await handleRefresh(); else setError(r.error || 'Uninstall failed'); }
+    catch { setError('Uninstall failed'); } finally { setUninstallingPackage(null); }
   }, [onUninstall, handleRefresh]);
 
-  const handleKeyDown = (e: React.KeyboardEvent) => {
-    if (e.key === 'Enter' && !isInstalling) {
-      handleInstall();
-    }
-  };
-
-  const filteredPackages = packages.filter(
-    (p) => p.name.toLowerCase().includes(filter.toLowerCase())
-  );
-
+  const filtered = packages.filter((p) => p.name.toLowerCase().includes(filter.toLowerCase()));
   if (!isOpen) return null;
 
   return (
@@ -179,93 +143,17 @@ export function PackageInspector({
       <div className="package-inspector__header">
         <h3>Packages</h3>
         <div className="package-inspector__actions">
-          <button
-            onClick={handleRefresh}
-            disabled={isLoading}
-            className="package-inspector__refresh"
-            title="Refresh packages"
-          >
-            {isLoading ? (
-              <span className="package-inspector__spinner" />
-            ) : (
-              <RefreshIcon />
-            )}
+          <button onClick={handleRefresh} disabled={isLoading} className="package-inspector__refresh" title="Refresh packages">
+            {isLoading ? <span className="package-inspector__spinner" /> : <RefreshIcon />}
           </button>
-          <button onClick={onClose} className="package-inspector__close" title="Close">
-            <CloseIcon />
-          </button>
+          <button onClick={onClose} className="package-inspector__close" title="Close"><CloseIcon /></button>
         </div>
       </div>
-
-      {/* Install input */}
-      <div className="package-inspector__install">
-        <input
-          type="text"
-          placeholder="Package name to install..."
-          value={installInput}
-          onChange={(e) => setInstallInput(e.target.value)}
-          onKeyDown={handleKeyDown}
-          disabled={isInstalling}
-        />
-        <button
-          onClick={handleInstall}
-          disabled={isInstalling || !installInput.trim()}
-          className="package-inspector__install-btn"
-          title="Install package"
-        >
-          {isInstalling ? (
-            <span className="package-inspector__spinner" />
-          ) : (
-            <PlusIcon />
-          )}
-        </button>
-      </div>
-
-      {/* Error display */}
-      {error && (
-        <div className="package-inspector__error">
-          {error}
-          <button onClick={() => setError(null)} title="Dismiss">
-            <CloseIcon />
-          </button>
-        </div>
-      )}
-
-      {/* Search filter */}
-      <div className="package-inspector__search">
-        <input
-          type="text"
-          placeholder="Filter packages..."
-          value={filter}
-          onChange={(e) => setFilter(e.target.value)}
-        />
-      </div>
-
-      {/* Package list */}
-      <div className="package-inspector__content">
-        {packages.length === 0 ? (
-          <div className="package-inspector__empty">
-            {isLoading ? 'Loading...' : 'No packages installed'}
-          </div>
-        ) : filteredPackages.length === 0 ? (
-          <div className="package-inspector__empty">No matching packages</div>
-        ) : (
-          <div className="package-inspector__list">
-            {filteredPackages.map((pkg) => (
-              <PackageRow
-                key={pkg.name}
-                pkg={pkg}
-                onUninstall={handleUninstall}
-                isUninstalling={uninstallingPackage === pkg.name}
-              />
-            ))}
-          </div>
-        )}
-      </div>
-
-      <div className="package-inspector__footer">
-        {packages.length} package{packages.length !== 1 ? 's' : ''}
-      </div>
+      <InstallInput value={installInput} onChange={setInstallInput} onInstall={handleInstall} isInstalling={isInstalling} />
+      {error && <div className="package-inspector__error">{error}<button onClick={() => setError(null)} title="Dismiss"><CloseIcon /></button></div>}
+      <div className="package-inspector__search"><input type="text" placeholder="Filter packages..." value={filter} onChange={(e) => setFilter(e.target.value)} /></div>
+      <div className="package-inspector__content"><PackageList packages={packages} filtered={filtered} isLoading={isLoading} uninstallingPkg={uninstallingPackage} onUninstall={handleUninstall} /></div>
+      <div className="package-inspector__footer">{packages.length} package{packages.length !== 1 ? 's' : ''}</div>
     </div>
   );
 }

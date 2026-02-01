@@ -1,0 +1,284 @@
+/* ─────────────────────────────────────────
+   Research Results Panel
+   ───────────────────────────────────────── */
+
+.research-panel {
+  background: var(--pb-bg-primary);
+  border: 1px solid var(--pb-border);
+  border-radius: var(--pb-radius-lg);
+  margin-top: var(--pb-space-2);
+  overflow: hidden;
+  animation: research-panel-slide-up var(--pb-duration-base) var(--pb-ease-out);
+}
+
+@keyframes research-panel-slide-up {
+  from {
+    opacity: 0;
+    transform: translateY(8px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.research-panel__header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: var(--pb-space-2) var(--pb-space-3);
+  background: var(--pb-bg-secondary);
+  border-bottom: 1px solid var(--pb-border-subtle);
+}
+
+.research-panel__title {
+  margin: 0;
+  font-size: var(--pb-text-sm);
+  font-weight: 600;
+  color: var(--pb-text-primary);
+}
+
+.research-panel__close {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 24px;
+  height: 24px;
+  padding: 0;
+  background: transparent;
+  border: none;
+  border-radius: var(--pb-radius-sm);
+  color: var(--pb-text-tertiary);
+  cursor: pointer;
+  transition: all var(--pb-duration-fast) var(--pb-ease);
+}
+
+.research-panel__close:hover {
+  background: var(--pb-bg-hover);
+  color: var(--pb-text-primary);
+}
+
+.research-panel__body {
+  padding: var(--pb-space-3);
+  max-height: 400px;
+  overflow-y: auto;
+}
+
+/* Loading state */
+.research-panel__loading {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: var(--pb-space-2);
+  padding: var(--pb-space-6);
+  color: var(--pb-text-secondary);
+  font-size: var(--pb-text-sm);
+}
+
+.research-panel__spinner {
+  width: 16px;
+  height: 16px;
+  border: 2px solid var(--pb-border);
+  border-top-color: var(--pb-accent);
+  border-radius: 50%;
+  animation: spin 1s linear infinite;
+}
+
+/* Error state */
+.research-panel__error {
+  display: flex;
+  align-items: flex-start;
+  gap: var(--pb-space-2);
+  padding: var(--pb-space-3);
+  background: var(--pb-error-dim);
+  border-radius: var(--pb-radius-md);
+  color: var(--pb-error);
+  font-size: var(--pb-text-sm);
+}
+
+.research-panel__error-icon {
+  flex-shrink: 0;
+}
+
+/* Empty state */
+.research-panel__empty {
+  padding: var(--pb-space-6);
+  text-align: center;
+  color: var(--pb-text-tertiary);
+  font-size: var(--pb-text-sm);
+}
+
+/* Content rendering */
+.research-panel__content {
+  font-size: var(--pb-text-sm);
+  line-height: 1.6;
+  color: var(--pb-text-primary);
+}
+
+.research-panel__h2 {
+  margin: var(--pb-space-4) 0 var(--pb-space-2);
+  font-size: var(--pb-text-lg);
+  font-weight: 600;
+}
+
+.research-panel__h3 {
+  margin: var(--pb-space-3) 0 var(--pb-space-2);
+  font-size: var(--pb-text-base);
+  font-weight: 600;
+}
+
+.research-panel__h4 {
+  margin: var(--pb-space-2) 0 var(--pb-space-1);
+  font-size: var(--pb-text-sm);
+  font-weight: 600;
+}
+
+.research-panel__paragraph {
+  margin: 0 0 var(--pb-space-2);
+}
+
+.research-panel__spacer {
+  height: var(--pb-space-2);
+}
+
+.research-panel__list-item {
+  display: flex;
+  gap: var(--pb-space-2);
+  margin-bottom: var(--pb-space-2);
+}
+
+.research-panel__list-number {
+  flex-shrink: 0;
+  font-weight: 600;
+  color: var(--pb-accent);
+  min-width: 1.5em;
+}
+
+.research-panel__bullet-item {
+  display: flex;
+  gap: var(--pb-space-2);
+  margin-bottom: var(--pb-space-1);
+}
+
+.research-panel__bullet {
+  flex-shrink: 0;
+  color: var(--pb-text-tertiary);
+}
+
+.research-panel__code-block {
+  margin: var(--pb-space-2) 0;
+  padding: var(--pb-space-3);
+  background: var(--pb-bg-inset);
+  border-radius: var(--pb-radius-md);
+  overflow-x: auto;
+}
+
+.research-panel__code-block code {
+  font-family: var(--pb-font-mono);
+  font-size: var(--pb-text-xs);
+  color: var(--pb-text-primary);
+  white-space: pre;
+}
+
+/* Debug panel actions */
+.research-panel__debug {
+  display: flex;
+  flex-direction: column;
+  gap: var(--pb-space-3);
+}
+
+.research-panel__actions {
+  display: flex;
+  justify-content: flex-end;
+  padding-top: var(--pb-space-2);
+  border-top: 1px solid var(--pb-border-subtle);
+}
+
+.research-panel__apply-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--pb-space-1-5);
+  padding: var(--pb-space-1-5) var(--pb-space-3);
+  font-family: var(--pb-font-sans);
+  font-size: var(--pb-text-sm);
+  font-weight: 500;
+  color: white;
+  background: var(--pb-accent);
+  border: none;
+  border-radius: var(--pb-radius-md);
+  cursor: pointer;
+  transition: all var(--pb-duration-fast) var(--pb-ease);
+}
+
+.research-panel__apply-btn:hover {
+  background: var(--pb-accent-hover);
+}
+
+/* Papers list */
+.research-panel__papers {
+  display: flex;
+  flex-direction: column;
+  gap: var(--pb-space-2);
+}
+
+.research-panel__paper {
+  display: block;
+  padding: var(--pb-space-3);
+  background: var(--pb-bg-secondary);
+  border: 1px solid var(--pb-border-subtle);
+  border-radius: var(--pb-radius-md);
+  text-decoration: none;
+  color: inherit;
+  transition: all var(--pb-duration-fast) var(--pb-ease);
+}
+
+.research-panel__paper:hover {
+  border-color: var(--pb-border);
+  background: var(--pb-bg-hover);
+}
+
+.research-panel__paper-header {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: var(--pb-space-2);
+}
+
+.research-panel__paper-header svg {
+  flex-shrink: 0;
+  color: var(--pb-text-tertiary);
+  margin-top: 2px;
+}
+
+.research-panel__paper-title {
+  margin: 0;
+  font-size: var(--pb-text-sm);
+  font-weight: 600;
+  color: var(--pb-text-primary);
+  line-height: 1.4;
+}
+
+.research-panel__paper-meta {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--pb-space-2);
+  margin-top: var(--pb-space-1);
+  font-size: var(--pb-text-xs);
+  color: var(--pb-text-tertiary);
+}
+
+.research-panel__paper-year {
+  font-weight: 500;
+}
+
+.research-panel__paper-citations {
+  color: var(--pb-accent);
+  font-weight: 500;
+}
+
+.research-panel__paper-abstract {
+  margin: var(--pb-space-2) 0 0;
+  font-size: var(--pb-text-xs);
+  color: var(--pb-text-secondary);
+  line-height: 1.5;
+}

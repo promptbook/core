@@ -4,6 +4,13 @@ export {
   extractHashMentions,
 } from './promptBuilder';
 
+export {
+  buildExplainOutputPrompt,
+  buildSuggestNextStepsPrompt,
+  buildDebugErrorPrompt,
+  buildExtractKeywordsPrompt,
+} from './researchPrompts';
+
 // Re-export types from @promptbook/types for convenience
 export type {
   AiSyncContext,

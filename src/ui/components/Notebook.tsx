@@ -4,7 +4,7 @@ import { Cell } from './Cell';
 import { TextCell } from './TextCell';
 import { FileEntry } from './FileAutocomplete';
 import type { KernelSymbol } from './SymbolAutocomplete';
-import type { DataFrameCallbacks } from './OutputArea';
+import type { DataFrameCallbacks, ResearchCallbacks } from './OutputArea';
 
 /** AI Assistance props for cells */
 export interface CellAIAssistanceProps {
@@ -34,6 +34,8 @@ interface NotebookProps {
   aiAssistance?: CellAIAssistanceProps;
   /** DataFrame callbacks - if provided, enables interactive DataFrame rendering */
   dataframeCallbacks?: DataFrameCallbacks;
+  /** Research assistance callbacks - if provided, enables research buttons below output */
+  researchCallbacks?: ResearchCallbacks;
 }
 
 // Icons
@@ -45,7 +47,7 @@ const Icons = {
   moveDown: <svg width="14" height="14" viewBox="0 0 14 14" fill="none" stroke="currentColor" strokeWidth="1.5"><path d="M7 2v10M3 8l4 4 4-4" /></svg>,
 };
 
-export function Notebook({ notebook, onUpdate, onRunCell, onSyncCell, onAddCell, onDeleteCell, onMoveCell, activeCellId, onCellFocus, listFiles, getSymbols, preloadedSymbols, aiAssistance, dataframeCallbacks }: NotebookProps) {
+export function Notebook({ notebook, onUpdate, onRunCell, onSyncCell, onAddCell, onDeleteCell, onMoveCell, activeCellId, onCellFocus, listFiles, getSymbols, preloadedSymbols, aiAssistance, dataframeCallbacks, researchCallbacks }: NotebookProps) {
   if (notebook.cells.length === 0) {
     return (
       <div className="notebook notebook--empty">
@@ -79,6 +81,7 @@ export function Notebook({ notebook, onUpdate, onRunCell, onSyncCell, onAddCell,
           preloadedSymbols={preloadedSymbols}
           aiAssistance={aiAssistance}
           dataframeCallbacks={dataframeCallbacks}
+          researchCallbacks={researchCallbacks}
         />
       ))}
       <div className="notebook-footer">
@@ -107,15 +110,16 @@ interface CellWrapperProps {
   preloadedSymbols?: KernelSymbol[];
   aiAssistance?: CellAIAssistanceProps;
   dataframeCallbacks?: DataFrameCallbacks;
+  researchCallbacks?: ResearchCallbacks;
 }
 
-function CellWrapper({ cell, index, totalCells, activeCellId, onUpdate, onRunCell, onSyncCell, onAddCell, onDeleteCell, onMoveCell, onCellFocus, listFiles, getSymbols, preloadedSymbols, aiAssistance, dataframeCallbacks }: CellWrapperProps) {
+function CellWrapper({ cell, index, totalCells, activeCellId, onUpdate, onRunCell, onSyncCell, onAddCell, onDeleteCell, onMoveCell, onCellFocus, listFiles, getSymbols, preloadedSymbols, aiAssistance, dataframeCallbacks, researchCallbacks }: CellWrapperProps) {
   return (
     <div className="notebook-cell-wrapper">
       {cell.cellType === 'text' ? (
         <TextCell cell={cell} onUpdate={onUpdate} isActive={activeCellId === cell.id} onFocus={onCellFocus} />
       ) : (
-        <Cell cell={cell} onUpdate={onUpdate} onRun={onRunCell} onSync={onSyncCell} isActive={activeCellId === cell.id} onFocus={onCellFocus} listFiles={listFiles} getSymbols={getSymbols} preloadedSymbols={preloadedSymbols} aiAssistance={aiAssistance} dataframeCallbacks={dataframeCallbacks} />
+        <Cell cell={cell} onUpdate={onUpdate} onRun={onRunCell} onSync={onSyncCell} isActive={activeCellId === cell.id} onFocus={onCellFocus} listFiles={listFiles} getSymbols={getSymbols} preloadedSymbols={preloadedSymbols} aiAssistance={aiAssistance} dataframeCallbacks={dataframeCallbacks} researchCallbacks={researchCallbacks} />
       )}
       <div className="cell-controls">
         {onMoveCell && index > 0 && (

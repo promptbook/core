@@ -1,0 +1,86 @@
+/* ─────────────────────────────────────────
+   Output Actions - Research Assistant Buttons
+   ───────────────────────────────────────── */
+
+.output-actions {
+  display: flex;
+  align-items: center;
+  gap: var(--pb-space-2);
+  padding: var(--pb-space-2) var(--pb-space-3);
+  border-top: 1px solid var(--pb-border-subtle);
+  background: var(--pb-bg-secondary);
+  border-bottom-left-radius: var(--pb-radius-md);
+  border-bottom-right-radius: var(--pb-radius-md);
+}
+
+.output-action-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--pb-space-1-5);
+  padding: var(--pb-space-1) var(--pb-space-2);
+  font-family: var(--pb-font-sans);
+  font-size: var(--pb-text-xs);
+  font-weight: 500;
+  color: var(--pb-text-tertiary);
+  background: transparent;
+  border: 1px solid transparent;
+  border-radius: var(--pb-radius-md);
+  cursor: pointer;
+  transition: all var(--pb-duration-fast) var(--pb-ease);
+  white-space: nowrap;
+}
+
+.output-action-btn:hover:not(:disabled) {
+  color: var(--pb-text-secondary);
+  background: var(--pb-bg-hover);
+  border-color: var(--pb-border);
+}
+
+.output-action-btn:active:not(:disabled) {
+  transform: scale(0.98);
+}
+
+.output-action-btn:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.output-action-btn--active {
+  color: var(--pb-accent);
+  background: var(--pb-accent-dim);
+  border-color: var(--pb-accent);
+}
+
+.output-action-btn--active:hover:not(:disabled) {
+  color: var(--pb-accent-hover);
+  background: var(--pb-accent-subtle);
+}
+
+.output-action-btn__label {
+  transition: opacity var(--pb-duration-fast) var(--pb-ease);
+}
+
+/* Loading spinner animation */
+.output-action-spinner {
+  animation: output-action-spin 1s linear infinite;
+}
+
+@keyframes output-action-spin {
+  from {
+    transform: rotate(0deg);
+  }
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+/* Responsive: Hide labels on smaller widths */
+@media (max-width: 600px) {
+  .output-action-btn__label {
+    display: none;
+  }
+
+  .output-action-btn {
+    padding: var(--pb-space-1-5);
+  }
+}
