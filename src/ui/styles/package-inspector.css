@@ -1,0 +1,326 @@
+/* ============================================
+   Package Inspector Panel
+   ============================================ */
+
+.package-inspector {
+  position: fixed;
+  top: 60px;
+  right: 0;
+  width: 320px;
+  height: calc(100vh - 60px);
+  background: var(--pb-bg-primary);
+  border-left: 1px solid var(--pb-border);
+  display: flex;
+  flex-direction: column;
+  z-index: 100;
+  box-shadow: var(--pb-shadow-lg);
+  animation: slideInFromRight var(--pb-duration-base) var(--pb-ease-out);
+}
+
+@keyframes slideInFromRight {
+  from {
+    transform: translateX(100%);
+    opacity: 0;
+  }
+  to {
+    transform: translateX(0);
+    opacity: 1;
+  }
+}
+
+.package-inspector__header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: var(--pb-space-3) var(--pb-space-4);
+  border-bottom: 1px solid var(--pb-border);
+  background: var(--pb-bg-secondary);
+}
+
+.package-inspector__header h3 {
+  margin: 0;
+  font-size: var(--pb-text-sm);
+  font-weight: 600;
+  color: var(--pb-text-primary);
+}
+
+.package-inspector__actions {
+  display: flex;
+  align-items: center;
+  gap: var(--pb-space-1);
+}
+
+.package-inspector__refresh,
+.package-inspector__close {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 28px;
+  height: 28px;
+  padding: 0;
+  color: var(--pb-text-tertiary);
+  background: transparent;
+  border: none;
+  border-radius: var(--pb-radius-md);
+  cursor: pointer;
+  transition: all var(--pb-duration-fast) var(--pb-ease);
+}
+
+.package-inspector__refresh:hover:not(:disabled),
+.package-inspector__close:hover {
+  color: var(--pb-text-primary);
+  background: var(--pb-bg-hover);
+}
+
+.package-inspector__refresh:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.package-inspector__spinner {
+  display: inline-block;
+  width: 14px;
+  height: 14px;
+  border: 2px solid var(--pb-border);
+  border-top-color: var(--pb-accent);
+  border-radius: 50%;
+  animation: spin 0.8s linear infinite;
+}
+
+@keyframes spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+/* Install input */
+.package-inspector__install {
+  display: flex;
+  gap: var(--pb-space-2);
+  padding: var(--pb-space-3) var(--pb-space-4);
+  border-bottom: 1px solid var(--pb-border-subtle);
+  background: var(--pb-bg-secondary);
+}
+
+.package-inspector__install input {
+  flex: 1;
+  padding: var(--pb-space-2) var(--pb-space-3);
+  font-size: var(--pb-text-sm);
+  color: var(--pb-text-primary);
+  background: var(--pb-bg-primary);
+  border: 1px solid var(--pb-border);
+  border-radius: var(--pb-radius-md);
+  outline: none;
+  transition: border-color var(--pb-duration-fast) var(--pb-ease);
+}
+
+.package-inspector__install input:focus {
+  border-color: var(--pb-accent);
+}
+
+.package-inspector__install input::placeholder {
+  color: var(--pb-text-tertiary);
+}
+
+.package-inspector__install-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 36px;
+  height: 36px;
+  padding: 0;
+  color: var(--pb-bg-primary);
+  background: var(--pb-accent);
+  border: none;
+  border-radius: var(--pb-radius-md);
+  cursor: pointer;
+  transition: all var(--pb-duration-fast) var(--pb-ease);
+}
+
+.package-inspector__install-btn:hover:not(:disabled) {
+  background: var(--pb-accent-hover);
+}
+
+.package-inspector__install-btn:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+/* Error display */
+.package-inspector__error {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--pb-space-2);
+  padding: var(--pb-space-2) var(--pb-space-4);
+  font-size: var(--pb-text-sm);
+  color: var(--pb-error);
+  background: var(--pb-error-bg, rgba(239, 68, 68, 0.1));
+  border-bottom: 1px solid var(--pb-border-subtle);
+}
+
+.package-inspector__error button {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 20px;
+  height: 20px;
+  padding: 0;
+  color: var(--pb-error);
+  background: transparent;
+  border: none;
+  border-radius: var(--pb-radius-sm);
+  cursor: pointer;
+  opacity: 0.7;
+}
+
+.package-inspector__error button:hover {
+  opacity: 1;
+}
+
+/* Search filter */
+.package-inspector__search {
+  padding: var(--pb-space-3) var(--pb-space-4);
+  border-bottom: 1px solid var(--pb-border-subtle);
+}
+
+.package-inspector__search input {
+  width: 100%;
+  padding: var(--pb-space-2) var(--pb-space-3);
+  font-size: var(--pb-text-sm);
+  color: var(--pb-text-primary);
+  background: var(--pb-bg-secondary);
+  border: 1px solid var(--pb-border);
+  border-radius: var(--pb-radius-md);
+  outline: none;
+  transition: border-color var(--pb-duration-fast) var(--pb-ease);
+}
+
+.package-inspector__search input:focus {
+  border-color: var(--pb-accent);
+}
+
+.package-inspector__search input::placeholder {
+  color: var(--pb-text-tertiary);
+}
+
+/* Content area */
+.package-inspector__content {
+  flex: 1;
+  overflow-y: auto;
+  padding: var(--pb-space-2);
+}
+
+.package-inspector__empty {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  height: 100%;
+  color: var(--pb-text-tertiary);
+  font-size: var(--pb-text-sm);
+}
+
+.package-inspector__list {
+  display: flex;
+  flex-direction: column;
+  gap: var(--pb-space-1);
+}
+
+.package-inspector__footer {
+  padding: var(--pb-space-2) var(--pb-space-4);
+  font-size: var(--pb-text-xs);
+  color: var(--pb-text-tertiary);
+  background: var(--pb-bg-secondary);
+  border-top: 1px solid var(--pb-border-subtle);
+}
+
+/* Package Row */
+.package-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: var(--pb-space-2) var(--pb-space-3);
+  background: var(--pb-bg-secondary);
+  border-radius: var(--pb-radius-md);
+  transition: background var(--pb-duration-fast) var(--pb-ease);
+}
+
+.package-row:hover {
+  background: var(--pb-bg-hover);
+}
+
+.package-row__info {
+  display: flex;
+  align-items: center;
+  gap: var(--pb-space-2);
+  min-width: 0;
+  flex: 1;
+}
+
+.package-row__name {
+  font-family: var(--pb-font-mono);
+  font-size: var(--pb-text-sm);
+  font-weight: 500;
+  color: var(--pb-text-primary);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.package-row__version {
+  font-family: var(--pb-font-mono);
+  font-size: var(--pb-text-xs);
+  color: var(--pb-text-tertiary);
+  padding: var(--pb-space-0-5) var(--pb-space-1-5);
+  background: var(--pb-bg-inset);
+  border-radius: var(--pb-radius-sm);
+  white-space: nowrap;
+}
+
+.package-row__uninstall {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 28px;
+  height: 28px;
+  padding: 0 var(--pb-space-2);
+  color: var(--pb-text-tertiary);
+  background: transparent;
+  border: none;
+  border-radius: var(--pb-radius-md);
+  cursor: pointer;
+  opacity: 0;
+  transition: all var(--pb-duration-fast) var(--pb-ease);
+}
+
+.package-row:hover .package-row__uninstall {
+  opacity: 1;
+}
+
+.package-row__uninstall:hover:not(:disabled) {
+  color: var(--pb-error);
+  background: var(--pb-error-bg, rgba(239, 68, 68, 0.1));
+}
+
+.package-row__uninstall:disabled {
+  cursor: not-allowed;
+}
+
+.package-row__uninstall--confirm {
+  opacity: 1;
+  color: var(--pb-bg-primary);
+  background: var(--pb-error);
+  font-size: var(--pb-text-xs);
+  font-weight: 500;
+}
+
+.package-row__uninstall--confirm:hover:not(:disabled) {
+  color: var(--pb-bg-primary);
+  background: var(--pb-error);
+  opacity: 0.9;
+}
+
+/* Adjust main content when package inspector is open */
+.app--packages-open .app-main {
+  margin-right: 320px;
+}

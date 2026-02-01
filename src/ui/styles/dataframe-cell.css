@@ -1,0 +1,205 @@
+/* ============================================
+   DataFrame Cell Component
+   Editable table cell for DataFrame viewer
+   ============================================ */
+
+/* ─────────────────────────────────────────
+   Base Cell Styling
+   ───────────────────────────────────────── */
+
+.dataframe-cell {
+  padding: var(--pb-space-2) var(--pb-space-3);
+  font-size: var(--pb-text-sm);
+  color: var(--pb-text-primary);
+  background: transparent;
+  border: 1px solid var(--pb-border);
+  border-top: none;
+  cursor: default;
+  transition: background var(--pb-duration-fast) var(--pb-ease);
+  position: relative;
+  min-width: 60px;
+  max-width: 300px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.dataframe-cell:hover {
+  background: var(--pb-bg-hover);
+}
+
+.dataframe-cell:focus {
+  outline: none;
+  box-shadow: inset 0 0 0 2px var(--pb-accent);
+  background: var(--pb-bg-hover);
+}
+
+.dataframe-cell:focus-visible {
+  box-shadow: inset 0 0 0 2px var(--pb-accent);
+}
+
+/* ─────────────────────────────────────────
+   Editing State
+   ───────────────────────────────────────── */
+
+.dataframe-cell--editing {
+  padding: 0;
+  background: var(--pb-bg-primary) !important;
+  overflow: visible;
+}
+
+.dataframe-cell__input {
+  width: 100%;
+  height: 100%;
+  min-height: 32px;
+  padding: var(--pb-space-2) var(--pb-space-3);
+  font-family: inherit;
+  font-size: var(--pb-text-sm);
+  color: var(--pb-text-primary);
+  background: var(--pb-bg-primary);
+  border: 2px solid var(--pb-accent);
+  border-radius: 0;
+  outline: none;
+  box-sizing: border-box;
+}
+
+.dataframe-cell__input:focus {
+  box-shadow: 0 0 0 2px var(--pb-accent-dim);
+}
+
+/* Error state */
+.dataframe-cell--error .dataframe-cell__input {
+  border-color: var(--pb-error);
+}
+
+.dataframe-cell--error .dataframe-cell__input:focus {
+  box-shadow: 0 0 0 2px var(--pb-error-dim);
+}
+
+.dataframe-cell__error {
+  position: absolute;
+  bottom: -24px;
+  left: 0;
+  right: 0;
+  padding: var(--pb-space-1) var(--pb-space-2);
+  font-size: var(--pb-text-xs);
+  color: var(--pb-error);
+  background: var(--pb-error-dim);
+  border: 1px solid var(--pb-error);
+  border-radius: var(--pb-radius-sm);
+  z-index: 10;
+  white-space: nowrap;
+}
+
+/* ─────────────────────────────────────────
+   Data Type Specific Styling
+   ───────────────────────────────────────── */
+
+/* Numeric types - right aligned with tabular numbers */
+.dataframe-cell--int64,
+.dataframe-cell--float64 {
+  text-align: right;
+  font-variant-numeric: tabular-nums;
+  font-family: var(--pb-font-mono);
+}
+
+.dataframe-cell--int64 .dataframe-cell__input,
+.dataframe-cell--float64 .dataframe-cell__input {
+  text-align: right;
+  font-variant-numeric: tabular-nums;
+  font-family: var(--pb-font-mono);
+}
+
+/* Boolean type - center aligned */
+.dataframe-cell--bool {
+  text-align: center;
+  font-family: var(--pb-font-mono);
+  font-weight: 500;
+}
+
+.dataframe-cell--bool .dataframe-cell__input {
+  text-align: center;
+  font-family: var(--pb-font-mono);
+}
+
+/* Datetime type - monospace font */
+.dataframe-cell--datetime64 {
+  font-family: var(--pb-font-mono);
+  font-size: var(--pb-text-xs);
+}
+
+.dataframe-cell--datetime64 .dataframe-cell__input {
+  font-family: var(--pb-font-mono);
+  font-size: var(--pb-text-xs);
+}
+
+/* String/object types - default left align */
+.dataframe-cell--object,
+.dataframe-cell--string,
+.dataframe-cell--category {
+  text-align: left;
+}
+
+/* ─────────────────────────────────────────
+   Null Value Styling
+   ───────────────────────────────────────── */
+
+.dataframe-cell--null {
+  color: var(--pb-text-tertiary);
+  font-style: italic;
+}
+
+.dataframe-cell--null::after {
+  content: 'null';
+  color: var(--pb-text-tertiary);
+  font-style: italic;
+  font-size: var(--pb-text-xs);
+}
+
+/* ─────────────────────────────────────────
+   Selection & Interaction States
+   ───────────────────────────────────────── */
+
+/* Selected cell */
+.dataframe-cell--selected {
+  background: var(--pb-accent-dim);
+  box-shadow: inset 0 0 0 2px var(--pb-accent);
+}
+
+/* Cell being dragged over (for copy/paste) */
+.dataframe-cell--drag-over {
+  background: var(--pb-accent-subtle);
+}
+
+/* Copied cell indicator */
+.dataframe-cell--copied {
+  animation: cellCopied 0.3s var(--pb-ease-out);
+}
+
+@keyframes cellCopied {
+  0% {
+    background: var(--pb-success-dim);
+    box-shadow: inset 0 0 0 2px var(--pb-success);
+  }
+  100% {
+    background: var(--pb-bg-primary);
+    box-shadow: none;
+  }
+}
+
+/* ─────────────────────────────────────────
+   Responsive Adjustments
+   ───────────────────────────────────────── */
+
+@media (max-width: 768px) {
+  .dataframe-cell {
+    padding: var(--pb-space-1-5) var(--pb-space-2);
+    font-size: var(--pb-text-xs);
+  }
+
+  .dataframe-cell__input {
+    padding: var(--pb-space-1-5) var(--pb-space-2);
+    font-size: var(--pb-text-xs);
+    min-height: 28px;
+  }
+}

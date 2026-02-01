@@ -1,0 +1,328 @@
+/* ============================================
+   DataFrame Toolbar
+   ============================================ */
+
+.dataframe-toolbar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--pb-space-4);
+  padding: var(--pb-space-2) var(--pb-space-3);
+  background: var(--pb-bg-secondary);
+  border-bottom: 1px solid var(--pb-border);
+  border-radius: var(--pb-radius-lg) var(--pb-radius-lg) 0 0;
+  min-height: 44px;
+}
+
+.dataframe-toolbar__left {
+  display: flex;
+  align-items: center;
+  gap: var(--pb-space-3);
+  flex: 1;
+  min-width: 0;
+  overflow-x: auto;
+}
+
+.dataframe-toolbar__right {
+  display: flex;
+  align-items: center;
+  gap: var(--pb-space-2);
+  flex-shrink: 0;
+}
+
+/* Variable name badge */
+.dataframe-toolbar__variable {
+  font-family: var(--pb-font-mono);
+  font-size: var(--pb-text-sm);
+  font-weight: 600;
+  color: var(--pb-accent);
+  padding: var(--pb-space-1) var(--pb-space-2);
+  background: var(--pb-accent-dim);
+  border-radius: var(--pb-radius-md);
+  white-space: nowrap;
+}
+
+/* Filter tags container */
+.dataframe-toolbar__tags {
+  display: flex;
+  align-items: center;
+  gap: var(--pb-space-1-5);
+  flex-wrap: wrap;
+}
+
+/* Individual filter tag */
+.dataframe-toolbar__tag {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--pb-space-1);
+  padding: var(--pb-space-1) var(--pb-space-2);
+  font-size: var(--pb-text-xs);
+  background: var(--pb-bg-primary);
+  border: 1px solid var(--pb-border);
+  border-radius: var(--pb-radius-md);
+  white-space: nowrap;
+}
+
+.dataframe-toolbar__tag-column {
+  font-family: var(--pb-font-mono);
+  font-weight: 500;
+  color: var(--pb-text-primary);
+}
+
+.dataframe-toolbar__tag-operator {
+  color: var(--pb-text-tertiary);
+}
+
+.dataframe-toolbar__tag-value {
+  font-family: var(--pb-font-mono);
+  color: var(--pb-accent);
+  max-width: 100px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.dataframe-toolbar__tag-remove {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 16px;
+  height: 16px;
+  padding: 0;
+  margin-left: var(--pb-space-0-5);
+  color: var(--pb-text-tertiary);
+  background: transparent;
+  border: none;
+  border-radius: var(--pb-radius-sm);
+  cursor: pointer;
+  transition: all var(--pb-duration-fast) var(--pb-ease);
+}
+
+.dataframe-toolbar__tag-remove:hover {
+  color: var(--pb-error);
+  background: var(--pb-error-dim);
+}
+
+/* Sort indicator */
+.dataframe-toolbar__sort-indicator {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--pb-space-1);
+  padding: var(--pb-space-1) var(--pb-space-2);
+  font-size: var(--pb-text-xs);
+  color: var(--pb-text-secondary);
+  background: var(--pb-bg-primary);
+  border: 1px solid var(--pb-border);
+  border-radius: var(--pb-radius-md);
+  cursor: pointer;
+  transition: all var(--pb-duration-fast) var(--pb-ease);
+  white-space: nowrap;
+}
+
+.dataframe-toolbar__sort-indicator:hover {
+  border-color: var(--pb-border-strong);
+  color: var(--pb-text-primary);
+}
+
+.dataframe-toolbar__sort-indicator svg {
+  color: var(--pb-accent);
+}
+
+.dataframe-toolbar__sort-direction {
+  color: var(--pb-text-tertiary);
+  font-size: var(--pb-text-xs);
+}
+
+/* Toolbar buttons */
+.dataframe-toolbar__btn {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--pb-space-1-5);
+  padding: var(--pb-space-1-5) var(--pb-space-2-5);
+  font-size: var(--pb-text-xs);
+  font-weight: 500;
+  color: var(--pb-text-secondary);
+  background: var(--pb-bg-primary);
+  border: 1px solid var(--pb-border);
+  border-radius: var(--pb-radius-md);
+  cursor: pointer;
+  transition: all var(--pb-duration-fast) var(--pb-ease);
+  white-space: nowrap;
+}
+
+.dataframe-toolbar__btn:hover:not(:disabled) {
+  background: var(--pb-bg-hover);
+  border-color: var(--pb-border-strong);
+  color: var(--pb-text-primary);
+}
+
+.dataframe-toolbar__btn:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.dataframe-toolbar__btn svg {
+  flex-shrink: 0;
+}
+
+/* Dropdown container */
+.dataframe-toolbar__dropdown {
+  position: relative;
+}
+
+/* Dropdown menu */
+.dataframe-toolbar__dropdown-menu {
+  position: absolute;
+  top: 100%;
+  right: 0;
+  margin-top: var(--pb-space-1);
+  min-width: 280px;
+  padding: var(--pb-space-3);
+  background: var(--pb-bg-elevated);
+  border: 1px solid var(--pb-border);
+  border-radius: var(--pb-radius-lg);
+  box-shadow: var(--pb-shadow-lg);
+  z-index: 100;
+  animation: fadeInUp var(--pb-duration-fast) var(--pb-ease-out);
+}
+
+@keyframes fadeInUp {
+  from {
+    opacity: 0;
+    transform: translateY(-4px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+/* Dropdown row */
+.dataframe-toolbar__dropdown-row {
+  display: flex;
+  flex-direction: column;
+  gap: var(--pb-space-1);
+  margin-bottom: var(--pb-space-3);
+}
+
+.dataframe-toolbar__dropdown-row label {
+  font-size: var(--pb-text-xs);
+  font-weight: 500;
+  color: var(--pb-text-tertiary);
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+}
+
+.dataframe-toolbar__dropdown-row select,
+.dataframe-toolbar__dropdown-row input {
+  padding: var(--pb-space-2) var(--pb-space-2-5);
+  font-size: var(--pb-text-sm);
+  color: var(--pb-text-primary);
+  background: var(--pb-bg-secondary);
+  border: 1px solid var(--pb-border);
+  border-radius: var(--pb-radius-md);
+  outline: none;
+  transition: border-color var(--pb-duration-fast) var(--pb-ease);
+}
+
+.dataframe-toolbar__dropdown-row select:focus,
+.dataframe-toolbar__dropdown-row input:focus {
+  border-color: var(--pb-accent);
+}
+
+.dataframe-toolbar__dropdown-row input::placeholder {
+  color: var(--pb-text-tertiary);
+}
+
+/* Between inputs */
+.dataframe-toolbar__between-inputs {
+  display: flex;
+  align-items: center;
+  gap: var(--pb-space-2);
+}
+
+.dataframe-toolbar__between-inputs input {
+  flex: 1;
+  min-width: 0;
+}
+
+.dataframe-toolbar__between-inputs span {
+  color: var(--pb-text-tertiary);
+  font-size: var(--pb-text-xs);
+}
+
+/* Dropdown error */
+.dataframe-toolbar__dropdown-error {
+  font-size: var(--pb-text-xs);
+  color: var(--pb-error);
+  margin-top: var(--pb-space-1);
+}
+
+/* Dropdown actions */
+.dataframe-toolbar__dropdown-actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: var(--pb-space-2);
+  margin-top: var(--pb-space-2);
+  padding-top: var(--pb-space-3);
+  border-top: 1px solid var(--pb-border);
+}
+
+.dataframe-toolbar__dropdown-cancel {
+  padding: var(--pb-space-1-5) var(--pb-space-3);
+  font-size: var(--pb-text-xs);
+  font-weight: 500;
+  color: var(--pb-text-secondary);
+  background: transparent;
+  border: 1px solid var(--pb-border);
+  border-radius: var(--pb-radius-md);
+  cursor: pointer;
+  transition: all var(--pb-duration-fast) var(--pb-ease);
+}
+
+.dataframe-toolbar__dropdown-cancel:hover {
+  background: var(--pb-bg-hover);
+  border-color: var(--pb-border-strong);
+}
+
+.dataframe-toolbar__dropdown-apply {
+  padding: var(--pb-space-1-5) var(--pb-space-3);
+  font-size: var(--pb-text-xs);
+  font-weight: 500;
+  color: white;
+  background: var(--pb-accent);
+  border: none;
+  border-radius: var(--pb-radius-md);
+  cursor: pointer;
+  transition: all var(--pb-duration-fast) var(--pb-ease);
+}
+
+.dataframe-toolbar__dropdown-apply:hover:not(:disabled) {
+  background: var(--pb-accent-hover);
+}
+
+.dataframe-toolbar__dropdown-apply:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+/* Responsive adjustments */
+@media (max-width: 600px) {
+  .dataframe-toolbar {
+    flex-direction: column;
+    align-items: stretch;
+    gap: var(--pb-space-2);
+  }
+
+  .dataframe-toolbar__left {
+    order: 2;
+  }
+
+  .dataframe-toolbar__right {
+    order: 1;
+    justify-content: flex-end;
+  }
+
+  .dataframe-toolbar__dropdown-menu {
+    min-width: 240px;
+  }
+}

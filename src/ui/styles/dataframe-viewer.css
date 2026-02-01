@@ -1,0 +1,374 @@
+/* ============================================
+   DataFrame Viewer Component
+   Main container for DataFrame display with
+   toolbar, table, and pagination
+   ============================================ */
+
+/* ─────────────────────────────────────────
+   Container
+   ───────────────────────────────────────── */
+
+.dataframe-viewer {
+  display: flex;
+  flex-direction: column;
+  border: 1px solid var(--pb-border);
+  border-radius: var(--pb-radius-lg);
+  background: var(--pb-bg-primary);
+  overflow: hidden;
+}
+
+/* ─────────────────────────────────────────
+   Error Message
+   ───────────────────────────────────────── */
+
+.dataframe-viewer__error {
+  display: flex;
+  align-items: center;
+  gap: var(--pb-space-2);
+  padding: var(--pb-space-2) var(--pb-space-3);
+  font-size: var(--pb-text-sm);
+  color: var(--pb-error);
+  background: var(--pb-error-dim);
+  border-bottom: 1px solid var(--pb-error);
+}
+
+.dataframe-viewer__error-icon {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 18px;
+  height: 18px;
+  font-weight: 700;
+  font-size: var(--pb-text-xs);
+  background: var(--pb-error);
+  color: white;
+  border-radius: var(--pb-radius-full);
+  flex-shrink: 0;
+}
+
+/* ─────────────────────────────────────────
+   Table Container
+   ───────────────────────────────────────── */
+
+.dataframe-viewer__table-container {
+  overflow: auto;
+  max-height: 500px;
+  position: relative;
+  transition: opacity var(--pb-duration-fast) var(--pb-ease);
+}
+
+.dataframe-viewer__table-container--loading {
+  opacity: 0.6;
+  pointer-events: none;
+}
+
+/* ─────────────────────────────────────────
+   Table
+   ───────────────────────────────────────── */
+
+.dataframe-viewer__table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: var(--pb-text-sm);
+  table-layout: auto;
+}
+
+/* ─────────────────────────────────────────
+   Header
+   ───────────────────────────────────────── */
+
+.dataframe-viewer__header {
+  position: sticky;
+  top: 0;
+  z-index: 10;
+  background: var(--pb-bg-secondary);
+}
+
+.dataframe-viewer__header-cell {
+  padding: 0;
+  font-weight: 500;
+  color: var(--pb-text-primary);
+  background: var(--pb-bg-secondary);
+  border-bottom: 2px solid var(--pb-border);
+  text-align: left;
+  white-space: nowrap;
+  position: relative;
+}
+
+.dataframe-viewer__header-cell--sorted {
+  background: var(--pb-accent-dim);
+}
+
+.dataframe-viewer__header-content {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--pb-space-2);
+  padding: var(--pb-space-2) var(--pb-space-3);
+}
+
+.dataframe-viewer__header-name {
+  display: flex;
+  align-items: center;
+  gap: var(--pb-space-2);
+  flex: 1;
+  padding: var(--pb-space-1);
+  margin: calc(-1 * var(--pb-space-1));
+  background: transparent;
+  border: none;
+  cursor: pointer;
+  color: inherit;
+  font: inherit;
+  text-align: left;
+  border-radius: var(--pb-radius-sm);
+  transition: background var(--pb-duration-fast) var(--pb-ease);
+}
+
+.dataframe-viewer__header-name:hover {
+  background: var(--pb-bg-hover);
+}
+
+.dataframe-viewer__header-name:focus-visible {
+  outline: none;
+  box-shadow: var(--pb-ring);
+}
+
+.dataframe-viewer__column-name {
+  font-weight: 600;
+  color: var(--pb-text-primary);
+}
+
+.dataframe-viewer__column-type {
+  font-size: var(--pb-text-xs);
+  font-weight: 400;
+  color: var(--pb-text-tertiary);
+  font-family: var(--pb-font-mono);
+}
+
+.dataframe-viewer__sort-icon {
+  display: flex;
+  align-items: center;
+  color: var(--pb-accent);
+}
+
+/* Row number header */
+.dataframe-viewer__row-number-header {
+  width: 60px;
+  min-width: 60px;
+  text-align: center;
+  color: var(--pb-text-tertiary);
+  font-weight: 400;
+  padding: var(--pb-space-2) var(--pb-space-3);
+}
+
+/* Delete column button */
+.dataframe-viewer__delete-column-btn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 24px;
+  height: 24px;
+  padding: 0;
+  background: transparent;
+  border: none;
+  border-radius: var(--pb-radius-sm);
+  color: var(--pb-text-tertiary);
+  cursor: pointer;
+  opacity: 0;
+  transition: all var(--pb-duration-fast) var(--pb-ease);
+  flex-shrink: 0;
+}
+
+.dataframe-viewer__header-cell:hover .dataframe-viewer__delete-column-btn {
+  opacity: 1;
+}
+
+.dataframe-viewer__delete-column-btn:hover {
+  background: var(--pb-error-dim);
+  color: var(--pb-error);
+}
+
+.dataframe-viewer__delete-column-btn:focus-visible {
+  opacity: 1;
+  outline: none;
+  box-shadow: var(--pb-ring);
+}
+
+/* ─────────────────────────────────────────
+   Body & Rows
+   ───────────────────────────────────────── */
+
+.dataframe-viewer__body {
+  background: var(--pb-bg-primary);
+}
+
+.dataframe-viewer__row {
+  background: var(--pb-bg-primary);
+  transition: background var(--pb-duration-fast) var(--pb-ease);
+}
+
+.dataframe-viewer__row:hover {
+  background: var(--pb-bg-hover);
+}
+
+.dataframe-viewer__row--striped {
+  background: var(--pb-bg-secondary);
+}
+
+.dataframe-viewer__row--striped:hover {
+  background: var(--pb-bg-hover);
+}
+
+/* ─────────────────────────────────────────
+   Row Number Column
+   ───────────────────────────────────────── */
+
+.dataframe-viewer__row-number {
+  width: 60px;
+  min-width: 60px;
+  padding: var(--pb-space-2) var(--pb-space-3);
+  text-align: center;
+  font-size: var(--pb-text-xs);
+  font-variant-numeric: tabular-nums;
+  color: var(--pb-text-tertiary);
+  background: var(--pb-bg-secondary);
+  border-right: 1px solid var(--pb-border);
+  border-bottom: 1px solid var(--pb-border);
+  position: relative;
+}
+
+.dataframe-viewer__row-number-text {
+  transition: opacity var(--pb-duration-fast) var(--pb-ease);
+}
+
+.dataframe-viewer__row-number:hover .dataframe-viewer__row-number-text {
+  opacity: 0;
+}
+
+/* Delete row button */
+.dataframe-viewer__delete-row-btn {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 24px;
+  height: 24px;
+  padding: 0;
+  background: var(--pb-error-dim);
+  border: none;
+  border-radius: var(--pb-radius-sm);
+  color: var(--pb-error);
+  cursor: pointer;
+  opacity: 0;
+  transition: all var(--pb-duration-fast) var(--pb-ease);
+}
+
+.dataframe-viewer__row-number:hover .dataframe-viewer__delete-row-btn {
+  opacity: 1;
+}
+
+.dataframe-viewer__delete-row-btn:hover {
+  background: var(--pb-error);
+  color: white;
+}
+
+.dataframe-viewer__delete-row-btn:focus-visible {
+  opacity: 1;
+  outline: none;
+  box-shadow: var(--pb-ring);
+}
+
+/* ─────────────────────────────────────────
+   Empty State
+   ───────────────────────────────────────── */
+
+.dataframe-viewer__empty-message {
+  padding: var(--pb-space-8) var(--pb-space-4);
+  text-align: center;
+  font-size: var(--pb-text-sm);
+  color: var(--pb-text-tertiary);
+  font-style: italic;
+  background: var(--pb-bg-primary);
+}
+
+/* ─────────────────────────────────────────
+   Responsive Adjustments
+   ───────────────────────────────────────── */
+
+@media (max-width: 768px) {
+  .dataframe-viewer__table-container {
+    max-height: 400px;
+  }
+
+  .dataframe-viewer__row-number-header,
+  .dataframe-viewer__row-number {
+    width: 50px;
+    min-width: 50px;
+    padding: var(--pb-space-1-5) var(--pb-space-2);
+  }
+
+  .dataframe-viewer__header-content {
+    padding: var(--pb-space-1-5) var(--pb-space-2);
+  }
+
+  .dataframe-viewer__column-name {
+    font-size: var(--pb-text-xs);
+  }
+
+  .dataframe-viewer__column-type {
+    display: none;
+  }
+}
+
+@media (max-width: 480px) {
+  .dataframe-viewer__table-container {
+    max-height: 300px;
+  }
+
+  .dataframe-viewer__row-number-header,
+  .dataframe-viewer__row-number {
+    width: 40px;
+    min-width: 40px;
+  }
+
+  .dataframe-viewer__delete-column-btn,
+  .dataframe-viewer__delete-row-btn {
+    width: 20px;
+    height: 20px;
+  }
+
+  .dataframe-viewer__delete-column-btn svg,
+  .dataframe-viewer__delete-row-btn svg {
+    width: 12px;
+    height: 12px;
+  }
+}
+
+/* ─────────────────────────────────────────
+   Dark Mode Adjustments
+   ───────────────────────────────────────── */
+
+@media (prefers-color-scheme: dark) {
+  .dataframe-viewer__header-cell--sorted {
+    background: var(--pb-accent-dim);
+  }
+}
+
+/* ─────────────────────────────────────────
+   Print Styles
+   ───────────────────────────────────────── */
+
+@media print {
+  .dataframe-viewer__table-container {
+    max-height: none;
+    overflow: visible;
+  }
+
+  .dataframe-viewer__delete-column-btn,
+  .dataframe-viewer__delete-row-btn {
+    display: none;
+  }
+}
