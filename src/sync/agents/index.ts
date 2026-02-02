@@ -7,6 +7,8 @@ export { extractParameters, extractSymbolMentions } from './SubAgent';
 export {
   runSyncOrchestrator,
   runSyncOrchestratorSync,
+  buildOrchestratorPrompt,
+  parseOrchestratorResponse,
 } from './SyncOrchestrator';
 export type { SyncContext, SyncOptions } from './SyncOrchestrator';
 

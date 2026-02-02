@@ -1,7 +1,7 @@
 /**
- * Sync Orchestrator - Uses Claude Agent SDK to synchronize notebook cell content
- * Streams results back via async generator
- * Uses claude-agent-sdk which handles Bedrock auth via .claude/settings.json
+ * Sync Orchestrator - Builds prompts and parses responses for cell synchronization
+ * The actual SDK call should be made by the caller (e.g., Electron main process)
+ * to handle ESM/CommonJS module compatibility
  */
 
 import type { CellContext } from '../../types';
@@ -40,7 +40,7 @@ export interface SyncOptions {
 /**
  * Build the prompt for the sync operation
  */
-function buildSyncPrompt(
+export function buildOrchestratorPrompt(
   sourceType: ContentType,
   sourceContent: string,
   context: SyncContext
@@ -132,7 +132,7 @@ Return ONLY a JSON object with exactly this structure (no markdown code fences, 
 /**
  * Parse the orchestrator's JSON response
  */
-function parseOrchestratorResponse(response: string): AlignedResults {
+export function parseOrchestratorResponse(response: string): AlignedResults {
   console.log('[SyncOrchestrator] Parsing response, length:', response.length);
 
   // Try to extract JSON from the response (handle markdown code blocks)
@@ -167,8 +167,9 @@ function parseOrchestratorResponse(response: string): AlignedResults {
 }
 
 /**
- * Run the sync orchestrator using Claude Agent SDK
- * Streams results back via async generator
+ * Run the sync orchestrator - this is a stub that should be called from Electron
+ * The actual SDK call is now in aiHandlers.ts to avoid ESM/CJS issues
+ * @deprecated Use buildOrchestratorPrompt and parseOrchestratorResponse directly from Electron
  */
 export async function* runSyncOrchestrator(
   sourceType: ContentType,
@@ -177,85 +178,16 @@ export async function* runSyncOrchestrator(
   _options: SyncOptions = {}
 ): AsyncGenerator<StreamChunk> {
   console.log('[SyncOrchestrator] Starting orchestration for sourceType:', sourceType);
+  console.log('[SyncOrchestrator] NOTE: This function should be called from Electron aiHandlers.ts');
 
-  try {
-    const prompt = buildSyncPrompt(sourceType, sourceContent, context);
-    console.log('[SyncOrchestrator] Built prompt, length:', prompt.length);
-
-    yield { type: 'thinking', content: 'Starting sync...' };
-
-    console.log('[SyncOrchestrator] Importing Claude Agent SDK...');
-    const { query } = await import('@anthropic-ai/claude-agent-sdk');
-
-    console.log('[SyncOrchestrator] Calling Claude Agent SDK query...');
-    let result = '';
-
-    // Use the Claude Agent SDK query function
-    // It handles Bedrock auth via .claude/settings.json when CLAUDE_CODE_USE_BEDROCK=1
-    for await (const message of query({
-      prompt,
-      options: {
-        // No tools needed - just text generation
-        tools: [],
-        // Bypass permissions since we're not using any tools
-        permissionMode: 'bypassPermissions',
-        // Limit to a single turn
-        maxTurns: 1,
-        // Don't persist the session
-        persistSession: false,
-      },
-    })) {
-      console.log('[SyncOrchestrator] Received message type:', message.type);
-
-      // Yield content chunks for streaming (assistant messages contain partial content)
-      if (message.type === 'assistant' && 'message' in message) {
-        const assistantMessage = message as { type: 'assistant'; message: { content: unknown[] } };
-        for (const block of assistantMessage.message.content) {
-          if (typeof block === 'object' && block !== null && 'text' in block) {
-            const text = (block as { text: string }).text;
-            yield { type: 'content', content: text };
-          }
-        }
-      }
-
-      // Collect the final result
-      if (message.type === 'result') {
-        result = (message as { type: 'result'; result: string }).result;
-        console.log('[SyncOrchestrator] Got result, length:', result.length);
-      }
-    }
-
-    console.log('[SyncOrchestrator] Query complete, result length:', result.length);
-
-    if (!result) {
-      throw new Error('No result from Claude Agent SDK');
-    }
-
-    // Parse the final result
-    const alignedResults = parseOrchestratorResponse(result);
-    console.log('[SyncOrchestrator] Parsed results successfully');
-
-    yield {
-      type: 'complete',
-      result: {
-        content: JSON.stringify(alignedResults),
-        parameters: alignedResults.unifiedParameters,
-        symbolMentions: [],
-        rawResponse: result,
-      },
-    };
-  } catch (error) {
-    const errorMessage = error instanceof Error ? error.message : String(error);
-    console.error('[SyncOrchestrator] Error:', errorMessage);
-    yield {
-      type: 'error',
-      error: errorMessage,
-    };
-  }
+  // This is now a passthrough - the actual implementation is in aiHandlers.ts
+  // We keep this for backwards compatibility but it won't work with claude-agent-sdk
+  yield { type: 'error', error: 'runSyncOrchestrator should be called from Electron main process' };
 }
 
 /**
  * Run sync orchestrator without streaming (returns final result only)
+ * @deprecated Use buildOrchestratorPrompt and parseOrchestratorResponse directly
  */
 export async function runSyncOrchestratorSync(
   sourceType: ContentType,
