@@ -157,12 +157,16 @@ export async function* runSyncOrchestrator(
   context: SyncContext,
   options: SyncOptions = {}
 ): AsyncGenerator<StreamChunk> {
+  console.log('[SyncOrchestrator] Starting orchestration for sourceType:', sourceType);
   try {
     const prompt = buildSyncPrompt(sourceType, sourceContent, context);
+    console.log('[SyncOrchestrator] Built prompt, length:', prompt.length);
 
     yield { type: 'thinking', content: 'Starting sync orchestration...' };
 
+    console.log('[SyncOrchestrator] Importing Claude Agent SDK...');
     const { query } = await dynamicImport('@anthropic-ai/claude-agent-sdk');
+    console.log('[SyncOrchestrator] SDK imported, calling query()...');
 
     let fullResponse = '';
 
@@ -175,18 +179,25 @@ export async function* runSyncOrchestrator(
         env: options.env,
       },
     })) {
+      console.log('[SyncOrchestrator] Received message type:', message.type);
       if (message.type === 'assistant') {
         const content = (message as { type: 'assistant'; content: string }).content;
         fullResponse += content;
+        console.log('[SyncOrchestrator] Assistant content chunk, length:', content.length);
         yield { type: 'content', content };
       } else if (message.type === 'result') {
         const result = (message as { type: 'result'; result: string }).result;
+        console.log('[SyncOrchestrator] Got result message');
         fullResponse = result || fullResponse;
       }
     }
 
+    console.log('[SyncOrchestrator] Finished receiving messages, parsing response...');
+    console.log('[SyncOrchestrator] Full response length:', fullResponse.length);
+
     // Parse the final result
     const alignedResults = parseOrchestratorResponse(fullResponse);
+    console.log('[SyncOrchestrator] Parsed results successfully');
     yield {
       type: 'complete',
       result: {
@@ -197,6 +208,7 @@ export async function* runSyncOrchestrator(
       },
     };
   } catch (error) {
+    console.error('[SyncOrchestrator] Error:', error);
     yield {
       type: 'error',
       error: error instanceof Error ? error.message : String(error),
