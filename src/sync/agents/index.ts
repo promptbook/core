@@ -1,6 +1,6 @@
 /**
  * AI-powered code synchronization orchestrator
- * Uses Claude Agent SDK with skills from .claude/skills/
+ * Uses Anthropic SDK for streaming sync
  */
 
 export { extractParameters, extractSymbolMentions } from './SubAgent';

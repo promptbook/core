@@ -1,13 +1,10 @@
 /**
- * Sync Orchestrator - Calls Claude to synchronize notebook cell content
- * Claude uses its native skill loading mechanism to access .claude/skills/
+ * Sync Orchestrator - Uses Anthropic SDK to synchronize notebook cell content
+ * Streams results back via async generator
  */
 
 import type { CellContext } from '../../types';
 import type { ContentType, AlignedResults, StreamChunk } from './types';
-
-// Dynamic import helper for ESM modules
-const dynamicImport = new Function('specifier', 'return import(specifier)');
 
 /**
  * Context for the sync operation
@@ -33,13 +30,14 @@ export interface SyncContext {
  * Options for the sync operation
  */
 export interface SyncOptions {
-  /** Environment variables for Claude */
-  env?: Record<string, string>;
+  /** Anthropic API key */
+  apiKey?: string;
+  /** Model to use */
+  model?: string;
 }
 
 /**
  * Build the prompt for the sync operation
- * This tells Claude to use the sync-orchestrator skill
  */
 function buildSyncPrompt(
   sourceType: ContentType,
@@ -48,11 +46,18 @@ function buildSyncPrompt(
 ): string {
   const sections: string[] = [];
 
-  // Main instruction - use the skill
-  sections.push('Use the sync-orchestrator skill to synchronize this notebook cell content.\n');
+  // System instruction
+  sections.push(`You are a notebook cell synchronization assistant. Your job is to keep three representations of a notebook cell aligned: Instructions (a short one-line description), Detailed (a detailed pseudocode description), and Code (Python code).
+
+Given a source (what the user edited), generate the other two representations to match.
+
+IMPORTANT RULES:
+1. Preserve any parameters in the format {{name:value}} - copy them exactly
+2. Preserve any symbol references like #variable_name
+3. Keep the three representations semantically aligned`);
 
   // Source information
-  sections.push(`## Sync Request\n`);
+  sections.push(`\n## Sync Request\n`);
   sections.push(`**Source Type:** ${sourceType}`);
 
   // Critical rule about code preservation
@@ -65,7 +70,7 @@ function buildSyncPrompt(
 
   // Cell context
   if (context.cellsBefore.length > 0) {
-    sections.push('**Cells Before:**');
+    sections.push('**Cells Before (for context):**');
     for (const cell of context.cellsBefore.slice(-3)) {
       const desc = cell.shortDescription || cell.code?.slice(0, 100) || 'Empty';
       sections.push(`- ${desc}`);
@@ -74,7 +79,7 @@ function buildSyncPrompt(
   }
 
   if (context.cellsAfter.length > 0) {
-    sections.push('**Cells After:**');
+    sections.push('**Cells After (for context):**');
     for (const cell of context.cellsAfter.slice(0, 3)) {
       const desc = cell.shortDescription || cell.code?.slice(0, 100) || 'Empty';
       sections.push(`- ${desc}`);
@@ -84,7 +89,7 @@ function buildSyncPrompt(
 
   // Parameters
   if (Object.keys(context.existingParameters).length > 0) {
-    sections.push('**Existing Parameters:**');
+    sections.push('**Existing Parameters (must preserve exactly):**');
     for (const [name, value] of Object.entries(context.existingParameters)) {
       sections.push(`- {{${name}:${value}}}`);
     }
@@ -110,15 +115,15 @@ function buildSyncPrompt(
   }
 
   // Output format instruction
-  sections.push(`\n## Output Format`);
-  sections.push(`Return a JSON object with this structure:`);
-  sections.push('```json');
-  sections.push('{');
-  sections.push('  "instructions": "concise instruction text",');
-  sections.push('  "detailed": "detailed pseudocode/description",');
-  sections.push('  "code": "python code"');
-  sections.push('}');
-  sections.push('```');
+  sections.push(`\n## Required Output Format
+
+Return ONLY a JSON object with exactly this structure (no markdown code fences, no explanation):
+
+{"instructions": "one-line description", "detailed": "detailed pseudocode description", "code": "python code"}`);
+
+  if (sourceType === 'code') {
+    sections.push(`\nRemember: The "code" field must contain EXACTLY the source content unchanged.`);
+  }
 
   return sections.join('\n');
 }
@@ -127,14 +132,18 @@ function buildSyncPrompt(
  * Parse the orchestrator's JSON response
  */
 function parseOrchestratorResponse(response: string): AlignedResults {
+  console.log('[SyncOrchestrator] Parsing response, length:', response.length);
+
   // Try to extract JSON from the response
   const jsonMatch = response.match(/\{[\s\S]*\}/);
   if (!jsonMatch) {
+    console.error('[SyncOrchestrator] No JSON found in response:', response.substring(0, 500));
     throw new Error('No JSON found in orchestrator response');
   }
 
   try {
     const parsed = JSON.parse(jsonMatch[0]);
+    console.log('[SyncOrchestrator] Successfully parsed JSON');
     return {
       instructions: parsed.instructions || '',
       detailed: parsed.detailed || '',
@@ -143,13 +152,15 @@ function parseOrchestratorResponse(response: string): AlignedResults {
       alignmentChanges: parsed.changes || [],
     };
   } catch (e) {
+    console.error('[SyncOrchestrator] JSON parse error:', e);
+    console.error('[SyncOrchestrator] Attempted to parse:', jsonMatch[0].substring(0, 500));
     throw new Error(`Failed to parse orchestrator response: ${e}`);
   }
 }
 
 /**
- * Run the sync orchestrator
- * This calls Claude with a prompt that instructs it to use the sync-orchestrator skill
+ * Run the sync orchestrator using Anthropic SDK
+ * Streams results back via async generator
  */
 export async function* runSyncOrchestrator(
   sourceType: ContentType,
@@ -158,46 +169,51 @@ export async function* runSyncOrchestrator(
   options: SyncOptions = {}
 ): AsyncGenerator<StreamChunk> {
   console.log('[SyncOrchestrator] Starting orchestration for sourceType:', sourceType);
+
   try {
     const prompt = buildSyncPrompt(sourceType, sourceContent, context);
     console.log('[SyncOrchestrator] Built prompt, length:', prompt.length);
 
-    yield { type: 'thinking', content: 'Starting sync orchestration...' };
+    yield { type: 'thinking', content: 'Starting sync...' };
 
-    console.log('[SyncOrchestrator] Importing Claude Agent SDK...');
-    const { query } = await dynamicImport('@anthropic-ai/claude-agent-sdk');
-    console.log('[SyncOrchestrator] SDK imported, calling query()...');
+    console.log('[SyncOrchestrator] Importing Anthropic SDK...');
+    const Anthropic = (await import('@anthropic-ai/sdk')).default;
 
+    // Create client with optional API key
+    const clientOptions: { apiKey?: string } = {};
+    if (options.apiKey) {
+      clientOptions.apiKey = options.apiKey;
+    }
+    console.log('[SyncOrchestrator] Creating Anthropic client...');
+    const client = new Anthropic(clientOptions);
+
+    console.log('[SyncOrchestrator] Calling messages.create with streaming...');
+
+    // Use streaming for real-time updates
     let fullResponse = '';
 
-    for await (const message of query({
-      prompt,
-      options: {
-        permissionMode: 'bypassPermissions',
-        maxTurns: 10,
-        persistSession: false,
-        env: options.env,
-      },
-    })) {
-      console.log('[SyncOrchestrator] Received message type:', message.type);
-      if (message.type === 'assistant') {
-        const content = (message as { type: 'assistant'; content: string }).content;
-        fullResponse += content;
-        console.log('[SyncOrchestrator] Assistant content chunk, length:', content.length);
-        yield { type: 'content', content };
-      } else if (message.type === 'result') {
-        const result = (message as { type: 'result'; result: string }).result;
-        console.log('[SyncOrchestrator] Got result message');
-        fullResponse = result || fullResponse;
+    const stream = client.messages.stream({
+      model: options.model || 'claude-sonnet-4-20250514',
+      max_tokens: 4096,
+      messages: [{ role: 'user', content: prompt }],
+    });
+
+    for await (const event of stream) {
+      if (event.type === 'content_block_delta') {
+        const delta = event.delta;
+        if ('text' in delta) {
+          fullResponse += delta.text;
+          yield { type: 'content', content: delta.text };
+        }
       }
     }
 
-    console.log('[SyncOrchestrator] Finished receiving messages, parsing response...');
-    console.log('[SyncOrchestrator] Full response length:', fullResponse.length);
+    console.log('[SyncOrchestrator] Stream complete, total response length:', fullResponse.length);
 
     // Parse the final result
     const alignedResults = parseOrchestratorResponse(fullResponse);
     console.log('[SyncOrchestrator] Parsed results successfully');
+
     yield {
       type: 'complete',
       result: {
@@ -208,10 +224,11 @@ export async function* runSyncOrchestrator(
       },
     };
   } catch (error) {
-    console.error('[SyncOrchestrator] Error:', error);
+    const errorMessage = error instanceof Error ? error.message : String(error);
+    console.error('[SyncOrchestrator] Error:', errorMessage);
     yield {
       type: 'error',
-      error: error instanceof Error ? error.message : String(error),
+      error: errorMessage,
     };
   }
 }
