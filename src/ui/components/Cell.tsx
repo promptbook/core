@@ -126,7 +126,7 @@ export function Cell({ cell, onUpdate, onRun, onSync, isActive, onFocus, listFil
       ) : (<>
         <CellContent activeTab={activeTab} cell={cell} contentHeight={contentHeight} onShortChange={handleShortChange} onPseudoChange={handlePseudoChange}
           onCodeChange={handleCodeChange} onParameterChange={handleParamChange} listFiles={listFiles} getSymbols={getSymbols} preloadedSymbols={preloadedSymbols}
-          showAiPanel={showAiPanel} onCloseAiPanel={() => setShowAiPanel(false)} aiAssistance={aiAssistance} />
+          showAiPanel={showAiPanel} onCloseAiPanel={() => setShowAiPanel(false)} aiAssistance={aiAssistance} syncStartTime={cell.syncStartTime} />
         <div className={`cell-resize-handle ${isResizing ? 'cell-resize-handle--active' : ''}`} onMouseDown={handleResizeStart}><div className="cell-resize-handle__grip" /></div>
       </>)}
       {cell.outputs.length > 0 && (
@@ -298,9 +298,10 @@ interface CellContentProps {
   showAiPanel?: boolean;
   onCloseAiPanel?: () => void;
   aiAssistance?: AIAssistanceProps;
+  syncStartTime?: number;
 }
 
-function CellContent({ activeTab, cell, contentHeight, onShortChange, onPseudoChange, onCodeChange, onParameterChange, listFiles, getSymbols, preloadedSymbols, showAiPanel, onCloseAiPanel, aiAssistance }: CellContentProps) {
+function CellContent({ activeTab, cell, contentHeight, onShortChange, onPseudoChange, onCodeChange, onParameterChange, listFiles, getSymbols, preloadedSymbols, showAiPanel, onCloseAiPanel, aiAssistance, syncStartTime }: CellContentProps) {
   const editorHeight = contentHeight - 32;
 
   // Wrap the send message to include current code
@@ -318,10 +319,10 @@ function CellContent({ activeTab, cell, contentHeight, onShortChange, onPseudoCh
   return (
     <div className="cell-content" style={{ minHeight: `${contentHeight}px` }}>
       {activeTab === 'short' && (
-        <DescriptionEditor content={cell.shortDescription} onChange={onShortChange} onParameterChange={onParameterChange} placeholder="Brief description of what this code does..." isSyncing={cell.isSyncing} minHeight={editorHeight} listFiles={listFiles} getSymbols={getSymbols} preloadedSymbols={preloadedSymbols} />
+        <DescriptionEditor content={cell.shortDescription} onChange={onShortChange} onParameterChange={onParameterChange} placeholder="Brief description of what this code does..." isSyncing={cell.isSyncing} syncStartTime={syncStartTime} minHeight={editorHeight} listFiles={listFiles} getSymbols={getSymbols} preloadedSymbols={preloadedSymbols} />
       )}
       {activeTab === 'pseudo' && (
-        <DescriptionEditor content={cell.pseudoCode} onChange={onPseudoChange} onParameterChange={onParameterChange} placeholder="Detailed step-by-step instructions explaining the logic..." isSyncing={cell.isSyncing} minHeight={editorHeight} listFiles={listFiles} getSymbols={getSymbols} preloadedSymbols={preloadedSymbols} />
+        <DescriptionEditor content={cell.pseudoCode} onChange={onPseudoChange} onParameterChange={onParameterChange} placeholder="Detailed step-by-step instructions explaining the logic..." isSyncing={cell.isSyncing} syncStartTime={syncStartTime} minHeight={editorHeight} listFiles={listFiles} getSymbols={getSymbols} preloadedSymbols={preloadedSymbols} />
       )}
       {activeTab === 'code' && (
         <div className={`cell-code-wrapper ${showAiPanel ? 'cell-code-with-ai' : ''}`}>

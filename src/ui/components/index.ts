@@ -26,6 +26,7 @@ export type { KernelSymbol, SymbolAutocompleteProps } from './SymbolAutocomplete
 export { CombinedAutocomplete } from './CombinedAutocomplete';
 export type { CombinedAutocompleteProps } from './CombinedAutocomplete';
 export { AIAssistancePanel } from './AIAssistancePanel';
+export { GeneratingOverlay } from './GeneratingOverlay';
 
 // DataFrame components
 export { DataFrameViewer } from './DataFrameViewer';

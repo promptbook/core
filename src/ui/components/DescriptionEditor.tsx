@@ -3,6 +3,7 @@ import { Parameter } from '../../types';
 import { FileEntry } from './FileAutocomplete';
 import { CombinedAutocomplete } from './CombinedAutocomplete';
 import type { KernelSymbol } from './SymbolAutocomplete';
+import { GeneratingOverlay } from './GeneratingOverlay';
 
 interface DescriptionEditorProps {
   content: string;
@@ -10,6 +11,8 @@ interface DescriptionEditorProps {
   onParameterChange?: (paramName: string, oldValue: string, newValue: string) => void;
   placeholder?: string;
   isSyncing?: boolean;
+  /** Timestamp when sync started (for elapsed time display) */
+  syncStartTime?: number;
   minHeight?: number;
   /** Function to list files for @ autocomplete */
   listFiles?: (dirPath?: string) => Promise<{ files: FileEntry[]; cwd: string }>;
@@ -57,7 +60,7 @@ function updateParameterInText(originalText: string, paramName: string, oldValue
   return originalText.replace(regex, `{{${paramName}:${newValue}}}`);
 }
 
-export function DescriptionEditor({ content, onChange, onParameterChange, placeholder = 'Enter description...', isSyncing = false, minHeight, listFiles, getSymbols, preloadedSymbols }: DescriptionEditorProps) {
+export function DescriptionEditor({ content, onChange, onParameterChange, placeholder = 'Enter description...', isSyncing = false, syncStartTime, minHeight, listFiles, getSymbols, preloadedSymbols }: DescriptionEditorProps) {
   const [editingParamId, setEditingParamId] = useState<string | null>(null);
   const [editValue, setEditValue] = useState('');
   const [isEditingText, setIsEditingText] = useState(false);
@@ -120,7 +123,7 @@ export function DescriptionEditor({ content, onChange, onParameterChange, placeh
   }
 
   return (
-    <div className={`description-editor ${isSyncing ? 'description-editor--syncing' : ''}`}>
+    <div className={`description-editor ${isSyncing ? 'description-editor--locked' : ''}`}>
       {isEditingText ? (
         <TextEditMode textareaRef={textareaRef} value={editingTextValue} onChange={setEditingTextValue} onBlur={handleTextSubmit} onKeyDown={handleTextKeyDown} placeholder={placeholder} minHeight={minHeight} listFiles={listFiles} getSymbols={getSymbols} preloadedSymbols={preloadedSymbols} />
       ) : (
@@ -128,6 +131,7 @@ export function DescriptionEditor({ content, onChange, onParameterChange, placeh
           <TextWithParameters parsed={parsed} editingParamId={editingParamId} editValue={editValue} onEditValueChange={setEditValue} onParameterClick={handleParameterClick} onParameterSubmit={handleParameterSubmit} onParamKeyDown={handleParamKeyDown} placeholder={placeholder} />
         </div>
       )}
+      <GeneratingOverlay isVisible={isSyncing} startTime={syncStartTime} message="Generating..." />
     </div>
   );
 }

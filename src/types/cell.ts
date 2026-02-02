@@ -54,9 +54,13 @@ export interface CellState {
   isInputCollapsed?: boolean;  // Whether cell input is collapsed
   isOutputCollapsed?: boolean; // Whether cell output is collapsed
 
+  // Sync timing
+  syncStartTime?: number;  // Timestamp when sync started (for showing elapsed time)
+
   // Background sync state
   isSyncingInBackground?: boolean;
   backgroundSyncError?: string;
+  backgroundSyncStartTime?: number;  // Timestamp when background sync started
   lastBackgroundSyncTimestamp?: number;
 }
 
@@ -86,8 +90,10 @@ export function createEmptyCell(id: string, cellType: CellType = 'code'): CellSt
     lastSyncedParams: undefined,
     isInputCollapsed: false,
     isOutputCollapsed: false,
+    syncStartTime: undefined,
     isSyncingInBackground: false,
     backgroundSyncError: undefined,
+    backgroundSyncStartTime: undefined,
     lastBackgroundSyncTimestamp: undefined,
   };
 }
