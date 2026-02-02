@@ -63,16 +63,16 @@ IMPORTANT RULES:
   sections.push(`\n## Sync Request\n`);
   sections.push(`**Source Type:** ${sourceType}`);
 
-  // Critical rule about source preservation - user's input must not be modified
+  // Rules about source handling
   if (sourceType === 'code') {
     sections.push(`\n**CRITICAL: The code below is user-written and must NOT be modified.**`);
     sections.push(`Copy it EXACTLY to the "code" field. Only generate Instructions and Detailed to match.`);
   } else if (sourceType === 'instructions') {
-    sections.push(`\n**CRITICAL: The instructions below are user-written and must NOT be rephrased.**`);
-    sections.push(`Copy them EXACTLY to the "instructions" field. Only generate Detailed and Code to match.`);
+    sections.push(`\n**IMPORTANT: Keep the instructions at the SAME level of detail the user wrote.**`);
+    sections.push(`You may rephrase slightly for clarity, but don't expand a brief instruction into a long one.`);
   } else if (sourceType === 'detailed') {
-    sections.push(`\n**CRITICAL: The detailed description below is user-written and must NOT be rephrased.**`);
-    sections.push(`Copy it EXACTLY to the "detailed" field. Only generate Instructions and Code to match.`);
+    sections.push(`\n**IMPORTANT: Keep the detailed description at the SAME level of detail the user wrote.**`);
+    sections.push(`You may rephrase slightly for clarity, but don't expand or condense significantly.`);
   }
 
   sections.push(`\n**Source Content:**\n\`\`\`\n${sourceContent}\n\`\`\`\n`);
@@ -130,13 +130,11 @@ Return ONLY a JSON object with exactly this structure (no markdown code fences, 
 
 {"instructions": "one-line description", "detailed": "detailed pseudocode description", "code": "python code"}`);
 
-  // Remind about preserving the source exactly
+  // Remind about source handling
   if (sourceType === 'code') {
     sections.push(`\nRemember: The "code" field must contain EXACTLY the source content unchanged.`);
-  } else if (sourceType === 'instructions') {
-    sections.push(`\nRemember: The "instructions" field must contain EXACTLY the source content unchanged.`);
-  } else if (sourceType === 'detailed') {
-    sections.push(`\nRemember: The "detailed" field must contain EXACTLY the source content unchanged.`);
+  } else if (sourceType === 'instructions' || sourceType === 'detailed') {
+    sections.push(`\nRemember: Match the user's level of detail - don't over-elaborate or over-simplify.`);
   }
 
   return sections.join('\n');
