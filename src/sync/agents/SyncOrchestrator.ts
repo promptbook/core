@@ -1,6 +1,7 @@
 /**
- * Sync Orchestrator - Uses Anthropic SDK to synchronize notebook cell content
+ * Sync Orchestrator - Uses Claude Agent SDK to synchronize notebook cell content
  * Streams results back via async generator
+ * Uses claude-agent-sdk which handles Bedrock auth via .claude/settings.json
  */
 
 import type { CellContext } from '../../types';
@@ -30,7 +31,7 @@ export interface SyncContext {
  * Options for the sync operation
  */
 export interface SyncOptions {
-  /** Anthropic API key */
+  /** Anthropic API key (for direct API fallback) */
   apiKey?: string;
   /** Model to use */
   model?: string;
@@ -134,15 +135,22 @@ Return ONLY a JSON object with exactly this structure (no markdown code fences, 
 function parseOrchestratorResponse(response: string): AlignedResults {
   console.log('[SyncOrchestrator] Parsing response, length:', response.length);
 
-  // Try to extract JSON from the response
-  const jsonMatch = response.match(/\{[\s\S]*\}/);
-  if (!jsonMatch) {
+  // Try to extract JSON from the response (handle markdown code blocks)
+  let jsonStr = response;
+  const jsonMatch = jsonStr.match(/```(?:json)?\s*([\s\S]*?)```/);
+  if (jsonMatch) {
+    jsonStr = jsonMatch[1];
+  }
+
+  // Try to extract JSON object
+  const objectMatch = jsonStr.match(/\{[\s\S]*\}/);
+  if (!objectMatch) {
     console.error('[SyncOrchestrator] No JSON found in response:', response.substring(0, 500));
     throw new Error('No JSON found in orchestrator response');
   }
 
   try {
-    const parsed = JSON.parse(jsonMatch[0]);
+    const parsed = JSON.parse(objectMatch[0]);
     console.log('[SyncOrchestrator] Successfully parsed JSON');
     return {
       instructions: parsed.instructions || '',
@@ -153,20 +161,20 @@ function parseOrchestratorResponse(response: string): AlignedResults {
     };
   } catch (e) {
     console.error('[SyncOrchestrator] JSON parse error:', e);
-    console.error('[SyncOrchestrator] Attempted to parse:', jsonMatch[0].substring(0, 500));
+    console.error('[SyncOrchestrator] Attempted to parse:', objectMatch[0].substring(0, 500));
     throw new Error(`Failed to parse orchestrator response: ${e}`);
   }
 }
 
 /**
- * Run the sync orchestrator using Anthropic SDK
+ * Run the sync orchestrator using Claude Agent SDK
  * Streams results back via async generator
  */
 export async function* runSyncOrchestrator(
   sourceType: ContentType,
   sourceContent: string,
   context: SyncContext,
-  options: SyncOptions = {}
+  _options: SyncOptions = {}
 ): AsyncGenerator<StreamChunk> {
   console.log('[SyncOrchestrator] Starting orchestration for sourceType:', sourceType);
 
@@ -176,42 +184,55 @@ export async function* runSyncOrchestrator(
 
     yield { type: 'thinking', content: 'Starting sync...' };
 
-    console.log('[SyncOrchestrator] Importing Anthropic SDK...');
-    const Anthropic = (await import('@anthropic-ai/sdk')).default;
+    console.log('[SyncOrchestrator] Importing Claude Agent SDK...');
+    const { query } = await import('@anthropic-ai/claude-agent-sdk');
 
-    // Create client with optional API key
-    const clientOptions: { apiKey?: string } = {};
-    if (options.apiKey) {
-      clientOptions.apiKey = options.apiKey;
-    }
-    console.log('[SyncOrchestrator] Creating Anthropic client...');
-    const client = new Anthropic(clientOptions);
+    console.log('[SyncOrchestrator] Calling Claude Agent SDK query...');
+    let result = '';
 
-    console.log('[SyncOrchestrator] Calling messages.create with streaming...');
+    // Use the Claude Agent SDK query function
+    // It handles Bedrock auth via .claude/settings.json when CLAUDE_CODE_USE_BEDROCK=1
+    for await (const message of query({
+      prompt,
+      options: {
+        // No tools needed - just text generation
+        tools: [],
+        // Bypass permissions since we're not using any tools
+        permissionMode: 'bypassPermissions',
+        // Limit to a single turn
+        maxTurns: 1,
+        // Don't persist the session
+        persistSession: false,
+      },
+    })) {
+      console.log('[SyncOrchestrator] Received message type:', message.type);
 
-    // Use streaming for real-time updates
-    let fullResponse = '';
-
-    const stream = client.messages.stream({
-      model: options.model || 'claude-sonnet-4-20250514',
-      max_tokens: 4096,
-      messages: [{ role: 'user', content: prompt }],
-    });
-
-    for await (const event of stream) {
-      if (event.type === 'content_block_delta') {
-        const delta = event.delta;
-        if ('text' in delta) {
-          fullResponse += delta.text;
-          yield { type: 'content', content: delta.text };
+      // Yield content chunks for streaming (assistant messages contain partial content)
+      if (message.type === 'assistant' && 'message' in message) {
+        const assistantMessage = message as { type: 'assistant'; message: { content: unknown[] } };
+        for (const block of assistantMessage.message.content) {
+          if (typeof block === 'object' && block !== null && 'text' in block) {
+            const text = (block as { text: string }).text;
+            yield { type: 'content', content: text };
+          }
         }
+      }
+
+      // Collect the final result
+      if (message.type === 'result') {
+        result = (message as { type: 'result'; result: string }).result;
+        console.log('[SyncOrchestrator] Got result, length:', result.length);
       }
     }
 
-    console.log('[SyncOrchestrator] Stream complete, total response length:', fullResponse.length);
+    console.log('[SyncOrchestrator] Query complete, result length:', result.length);
+
+    if (!result) {
+      throw new Error('No result from Claude Agent SDK');
+    }
 
     // Parse the final result
-    const alignedResults = parseOrchestratorResponse(fullResponse);
+    const alignedResults = parseOrchestratorResponse(result);
     console.log('[SyncOrchestrator] Parsed results successfully');
 
     yield {
@@ -220,7 +241,7 @@ export async function* runSyncOrchestrator(
         content: JSON.stringify(alignedResults),
         parameters: alignedResults.unifiedParameters,
         symbolMentions: [],
-        rawResponse: fullResponse,
+        rawResponse: result,
       },
     };
   } catch (error) {
