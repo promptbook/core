@@ -11,6 +11,11 @@ export {
   buildExtractKeywordsPrompt,
 } from './researchPrompts';
 
+// Agents and skills modules use Node.js fs/path - only import in Node.js environment
+// Import via: import { runSyncOrchestrator } from '@promptbook/core/sync' from main process only
+export * from './agents';
+export * from './skills';
+
 // Re-export types from @promptbook/types for convenience
 export type {
   AiSyncContext,

@@ -7,8 +7,5 @@ export * from './types';
 // UI components
 export * from './ui';
 
-// Sync providers and utilities
-export * from './sync';
-
-// Note: kernel and utils are Node.js only - import via '@promptbook/core/kernel' or '@promptbook/core/utils'
+// Note: sync, kernel and utils are Node.js only - import via '@promptbook/core/sync', '@promptbook/core/kernel' or '@promptbook/core/utils'
 // They are not exported from the main entry point to avoid bundling Node.js-specific code in browser builds
