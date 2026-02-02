@@ -63,10 +63,16 @@ IMPORTANT RULES:
   sections.push(`\n## Sync Request\n`);
   sections.push(`**Source Type:** ${sourceType}`);
 
-  // Critical rule about code preservation
+  // Critical rule about source preservation - user's input must not be modified
   if (sourceType === 'code') {
     sections.push(`\n**CRITICAL: The code below is user-written and must NOT be modified.**`);
-    sections.push(`Only generate Instructions and Detailed descriptions to match this code.`);
+    sections.push(`Copy it EXACTLY to the "code" field. Only generate Instructions and Detailed to match.`);
+  } else if (sourceType === 'instructions') {
+    sections.push(`\n**CRITICAL: The instructions below are user-written and must NOT be rephrased.**`);
+    sections.push(`Copy them EXACTLY to the "instructions" field. Only generate Detailed and Code to match.`);
+  } else if (sourceType === 'detailed') {
+    sections.push(`\n**CRITICAL: The detailed description below is user-written and must NOT be rephrased.**`);
+    sections.push(`Copy it EXACTLY to the "detailed" field. Only generate Instructions and Code to match.`);
   }
 
   sections.push(`\n**Source Content:**\n\`\`\`\n${sourceContent}\n\`\`\`\n`);
@@ -124,8 +130,13 @@ Return ONLY a JSON object with exactly this structure (no markdown code fences, 
 
 {"instructions": "one-line description", "detailed": "detailed pseudocode description", "code": "python code"}`);
 
+  // Remind about preserving the source exactly
   if (sourceType === 'code') {
     sections.push(`\nRemember: The "code" field must contain EXACTLY the source content unchanged.`);
+  } else if (sourceType === 'instructions') {
+    sections.push(`\nRemember: The "instructions" field must contain EXACTLY the source content unchanged.`);
+  } else if (sourceType === 'detailed') {
+    sections.push(`\nRemember: The "detailed" field must contain EXACTLY the source content unchanged.`);
   }
 
   return sections.join('\n');
