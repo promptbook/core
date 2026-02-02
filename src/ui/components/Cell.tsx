@@ -319,10 +319,10 @@ function CellContent({ activeTab, cell, contentHeight, onShortChange, onPseudoCh
   return (
     <div className="cell-content" style={{ minHeight: `${contentHeight}px` }}>
       {activeTab === 'short' && (
-        <DescriptionEditor content={cell.shortDescription} onChange={onShortChange} onParameterChange={onParameterChange} placeholder="Brief description of what this code does..." isSyncing={cell.isSyncing} syncStartTime={syncStartTime} minHeight={editorHeight} listFiles={listFiles} getSymbols={getSymbols} preloadedSymbols={preloadedSymbols} />
+        <DescriptionEditor content={cell.shortDescription} onChange={onShortChange} onParameterChange={onParameterChange} placeholder="Brief description of what this code does..." isSyncing={cell.isSyncing} syncStartTime={syncStartTime} minHeight={editorHeight} listFiles={listFiles} getSymbols={getSymbols} preloadedSymbols={preloadedSymbols} streamingContent={cell.streamingContent} streamingThinking={cell.streamingThinking} />
       )}
       {activeTab === 'pseudo' && (
-        <DescriptionEditor content={cell.pseudoCode} onChange={onPseudoChange} onParameterChange={onParameterChange} placeholder="Detailed step-by-step instructions explaining the logic..." isSyncing={cell.isSyncing} syncStartTime={syncStartTime} minHeight={editorHeight} listFiles={listFiles} getSymbols={getSymbols} preloadedSymbols={preloadedSymbols} />
+        <DescriptionEditor content={cell.pseudoCode} onChange={onPseudoChange} onParameterChange={onParameterChange} placeholder="Detailed step-by-step instructions explaining the logic..." isSyncing={cell.isSyncing} syncStartTime={syncStartTime} minHeight={editorHeight} listFiles={listFiles} getSymbols={getSymbols} preloadedSymbols={preloadedSymbols} streamingContent={cell.streamingContent} streamingThinking={cell.streamingThinking} />
       )}
       {activeTab === 'code' && (
         <div className={`cell-code-wrapper ${showAiPanel ? 'cell-code-with-ai' : ''}`}>

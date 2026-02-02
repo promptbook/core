@@ -20,6 +20,10 @@ interface DescriptionEditorProps {
   getSymbols?: () => Promise<KernelSymbol[]>;
   /** Pre-loaded symbols from LLM code generation - preferred over kernel symbols */
   preloadedSymbols?: KernelSymbol[];
+  /** Streaming content from AI */
+  streamingContent?: string;
+  /** AI thinking/reasoning content */
+  streamingThinking?: string;
 }
 
 interface ParsedDescription {
@@ -60,7 +64,7 @@ function updateParameterInText(originalText: string, paramName: string, oldValue
   return originalText.replace(regex, `{{${paramName}:${newValue}}}`);
 }
 
-export function DescriptionEditor({ content, onChange, onParameterChange, placeholder = 'Enter description...', isSyncing = false, syncStartTime, minHeight, listFiles, getSymbols, preloadedSymbols }: DescriptionEditorProps) {
+export function DescriptionEditor({ content, onChange, onParameterChange, placeholder = 'Enter description...', isSyncing = false, syncStartTime, minHeight, listFiles, getSymbols, preloadedSymbols, streamingContent, streamingThinking }: DescriptionEditorProps) {
   const [editingParamId, setEditingParamId] = useState<string | null>(null);
   const [editValue, setEditValue] = useState('');
   const [isEditingText, setIsEditingText] = useState(false);
@@ -131,7 +135,7 @@ export function DescriptionEditor({ content, onChange, onParameterChange, placeh
           <TextWithParameters parsed={parsed} editingParamId={editingParamId} editValue={editValue} onEditValueChange={setEditValue} onParameterClick={handleParameterClick} onParameterSubmit={handleParameterSubmit} onParamKeyDown={handleParamKeyDown} placeholder={placeholder} />
         </div>
       )}
-      <GeneratingOverlay isVisible={isSyncing} startTime={syncStartTime} message="Generating..." />
+      <GeneratingOverlay isVisible={isSyncing} startTime={syncStartTime} message="Generating..." streamingContent={streamingContent} streamingThinking={streamingThinking} />
     </div>
   );
 }

@@ -9,6 +9,10 @@ interface GeneratingOverlayProps {
   message?: string;
   /** Whether this is a background operation (subtle styling) */
   isBackground?: boolean;
+  /** Streaming content from AI (displayed as it arrives) */
+  streamingContent?: string;
+  /** AI thinking/reasoning content */
+  streamingThinking?: string;
 }
 
 /** Format elapsed time in a human-readable way */
@@ -24,7 +28,7 @@ function formatElapsedTime(ms: number): string {
  * Overlay shown when LLM is generating content.
  * Displays a spinner, message, and elapsed time counter.
  */
-export function GeneratingOverlay({ isVisible, startTime, message = 'Generating...', isBackground = false }: GeneratingOverlayProps) {
+export function GeneratingOverlay({ isVisible, startTime, message = 'Generating...', isBackground = false, streamingContent, streamingThinking }: GeneratingOverlayProps) {
   const [elapsed, setElapsed] = useState(0);
 
   useEffect(() => {
@@ -47,6 +51,8 @@ export function GeneratingOverlay({ isVisible, startTime, message = 'Generating.
     ? 'generating-overlay generating-overlay--background'
     : 'generating-overlay';
 
+  const hasStreamingContent = streamingContent || streamingThinking;
+
   return (
     <div className={overlayClass}>
       <div className="generating-overlay__content">
@@ -56,6 +62,22 @@ export function GeneratingOverlay({ isVisible, startTime, message = 'Generating.
           <span className="generating-overlay__time">{formatElapsedTime(elapsed)}</span>
         )}
       </div>
+      {hasStreamingContent && (
+        <div className="generating-overlay__streaming">
+          {streamingThinking && (
+            <div className="generating-overlay__thinking">
+              <span className="generating-overlay__label">Thinking...</span>
+              <pre className="generating-overlay__text">{streamingThinking.slice(-500)}</pre>
+            </div>
+          )}
+          {streamingContent && (
+            <div className="generating-overlay__response">
+              <span className="generating-overlay__label">Response:</span>
+              <pre className="generating-overlay__text">{streamingContent.slice(-300)}</pre>
+            </div>
+          )}
+        </div>
+      )}
     </div>
   );
 }
