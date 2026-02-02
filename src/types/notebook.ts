@@ -1,4 +1,4 @@
-import { CellState, createEmptyCell } from './cell';
+import { CellState } from './cell';
 import type { GeneratedSymbol } from './sync';
 
 export interface NotebookMetadata {
@@ -20,7 +20,6 @@ export interface NotebookState {
 }
 
 export function createEmptyNotebook(): NotebookState {
-  const firstCell = createEmptyCell('cell-1');
   return {
     version: '1.0',
     metadata: {
@@ -31,7 +30,7 @@ export function createEmptyNotebook(): NotebookState {
       symbols: [],
       symbolsLastUpdated: undefined,
     },
-    cells: [firstCell],
-    activeCellId: firstCell.id,
+    cells: [],
+    activeCellId: null,
   };
 }

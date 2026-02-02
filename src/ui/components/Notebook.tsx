@@ -36,6 +36,8 @@ interface NotebookProps {
   dataframeCallbacks?: DataFrameCallbacks;
   /** Research assistance callbacks - if provided, enables research buttons below output */
   researchCallbacks?: ResearchCallbacks;
+  /** Callback to open the generate cells modal */
+  onOpenGenerateCells?: () => void;
 }
 
 // Icons
@@ -45,9 +47,10 @@ const Icons = {
   addText: <svg width="14" height="14" viewBox="0 0 14 14" fill="none" stroke="currentColor" strokeWidth="1.5"><path d="M2.5 3h9M2.5 7h6M2.5 11h8" /></svg>,
   moveUp: <svg width="14" height="14" viewBox="0 0 14 14" fill="none" stroke="currentColor" strokeWidth="1.5"><path d="M7 2v10M3 6l4-4 4 4" /></svg>,
   moveDown: <svg width="14" height="14" viewBox="0 0 14 14" fill="none" stroke="currentColor" strokeWidth="1.5"><path d="M7 2v10M3 8l4 4 4-4" /></svg>,
+  generate: <svg width="14" height="14" viewBox="0 0 14 14" fill="none" stroke="currentColor" strokeWidth="1.5"><path d="M7 1v3M7 10v3M1 7h3M10 7h3M2.75 2.75l2.12 2.12M9.13 9.13l2.12 2.12M11.25 2.75l-2.12 2.12M4.87 9.13l-2.12 2.12" /></svg>,
 };
 
-export function Notebook({ notebook, onUpdate, onRunCell, onSyncCell, onAddCell, onDeleteCell, onMoveCell, activeCellId, onCellFocus, listFiles, getSymbols, preloadedSymbols, aiAssistance, dataframeCallbacks, researchCallbacks }: NotebookProps) {
+export function Notebook({ notebook, onUpdate, onRunCell, onSyncCell, onAddCell, onDeleteCell, onMoveCell, activeCellId, onCellFocus, listFiles, getSymbols, preloadedSymbols, aiAssistance, dataframeCallbacks, researchCallbacks, onOpenGenerateCells }: NotebookProps) {
   if (notebook.cells.length === 0) {
     return (
       <div className="notebook notebook--empty">
@@ -55,6 +58,9 @@ export function Notebook({ notebook, onUpdate, onRunCell, onSyncCell, onAddCell,
         <div className="notebook-empty-actions">
           <button onClick={() => onAddCell(undefined, 'code')} aria-label="Add code cell">{Icons.addCode}<span>Add Code Cell</span></button>
           <button onClick={() => onAddCell(undefined, 'text')} aria-label="Add text cell">{Icons.addText}<span>Add Text Cell</span></button>
+          {onOpenGenerateCells && (
+            <button onClick={onOpenGenerateCells} aria-label="Generate cells" className="notebook-btn-generate">{Icons.generate}<span>Generate</span></button>
+          )}
         </div>
       </div>
     );
@@ -87,6 +93,9 @@ export function Notebook({ notebook, onUpdate, onRunCell, onSyncCell, onAddCell,
       <div className="notebook-footer">
         <button onClick={() => onAddCell(undefined, 'code')} aria-label="Add code cell">{Icons.addCode}<span>Code</span></button>
         <button onClick={() => onAddCell(undefined, 'text')} aria-label="Add text cell">{Icons.addText}<span>Text</span></button>
+        {onOpenGenerateCells && (
+          <button onClick={onOpenGenerateCells} aria-label="Generate cells" className="notebook-btn-generate">{Icons.generate}<span>Generate</span></button>
+        )}
       </div>
     </div>
   );
@@ -119,7 +128,7 @@ function CellWrapper({ cell, index, totalCells, activeCellId, onUpdate, onRunCel
       {cell.cellType === 'text' ? (
         <TextCell cell={cell} onUpdate={onUpdate} isActive={activeCellId === cell.id} onFocus={onCellFocus} />
       ) : (
-        <Cell cell={cell} onUpdate={onUpdate} onRun={onRunCell} onSync={onSyncCell} isActive={activeCellId === cell.id} onFocus={onCellFocus} listFiles={listFiles} getSymbols={getSymbols} preloadedSymbols={preloadedSymbols} aiAssistance={aiAssistance} dataframeCallbacks={dataframeCallbacks} researchCallbacks={researchCallbacks} />
+        <Cell cell={cell} cellIndex={index + 1} onUpdate={onUpdate} onRun={onRunCell} onSync={onSyncCell} isActive={activeCellId === cell.id} onFocus={onCellFocus} listFiles={listFiles} getSymbols={getSymbols} preloadedSymbols={preloadedSymbols} aiAssistance={aiAssistance} dataframeCallbacks={dataframeCallbacks} researchCallbacks={researchCallbacks} />
       )}
       <div className="cell-controls">
         {onMoveCell && index > 0 && (

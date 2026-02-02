@@ -27,6 +27,9 @@ export { CombinedAutocomplete } from './CombinedAutocomplete';
 export type { CombinedAutocompleteProps } from './CombinedAutocomplete';
 export { AIAssistancePanel } from './AIAssistancePanel';
 export { GeneratingOverlay } from './GeneratingOverlay';
+export { ThinkingPanel } from './ThinkingPanel';
+export { GenerateCellsModal } from './GenerateCellsModal';
+export type { GenerateCellsModalProps } from './GenerateCellsModal';
 
 // DataFrame components
 export { DataFrameViewer } from './DataFrameViewer';

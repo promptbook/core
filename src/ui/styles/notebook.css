@@ -209,6 +209,18 @@
   background: var(--pb-accent-dim);
 }
 
+.notebook-footer button.notebook-btn-generate {
+  border-style: solid;
+  background: var(--pb-accent-dim);
+  color: var(--pb-accent);
+}
+
+.notebook-footer button.notebook-btn-generate:hover {
+  background: var(--pb-accent);
+  color: white;
+  border-color: var(--pb-accent);
+}
+
 .notebook-footer button svg {
   width: 16px;
   height: 16px;

@@ -1,0 +1,87 @@
+/* ============================================
+   Thinking Panel
+   Shows AI thinking process from last sync
+   ============================================ */
+
+.thinking-panel {
+  border-top: 1px solid var(--pb-border-subtle);
+  background: var(--pb-bg-secondary);
+}
+
+.thinking-panel--collapsed .thinking-panel__content {
+  display: none;
+}
+
+.thinking-panel__header {
+  display: flex;
+  align-items: center;
+  gap: var(--pb-space-2);
+  padding: var(--pb-space-2) var(--pb-space-4);
+  cursor: pointer;
+  user-select: none;
+  font-size: var(--pb-text-sm);
+  color: var(--pb-text-secondary);
+  transition: background var(--pb-duration-fast) var(--pb-ease);
+}
+
+.thinking-panel__header:hover {
+  background: var(--pb-bg-hover);
+}
+
+.thinking-panel__icon {
+  font-size: var(--pb-text-xs);
+  width: 12px;
+  color: var(--pb-text-tertiary);
+}
+
+.thinking-panel__title {
+  font-weight: 500;
+  color: var(--pb-text-primary);
+}
+
+.thinking-panel__time {
+  margin-left: auto;
+  font-size: var(--pb-text-xs);
+  font-family: var(--pb-font-mono);
+  color: var(--pb-text-tertiary);
+}
+
+.thinking-panel__content {
+  padding: var(--pb-space-3) var(--pb-space-4);
+  max-height: 400px;
+  overflow-y: auto;
+}
+
+.thinking-panel__section {
+  margin-bottom: var(--pb-space-4);
+}
+
+.thinking-panel__section:last-child {
+  margin-bottom: 0;
+}
+
+.thinking-panel__label {
+  font-size: var(--pb-text-xs);
+  font-weight: 600;
+  color: var(--pb-text-secondary);
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  margin-bottom: var(--pb-space-2);
+  padding-left: var(--pb-space-2);
+  border-left: 2px solid var(--pb-accent);
+}
+
+.thinking-panel__text {
+  font-family: var(--pb-font-mono);
+  font-size: var(--pb-text-xs);
+  color: var(--pb-text-primary);
+  background: var(--pb-bg-inset);
+  border-radius: var(--pb-radius-md);
+  padding: var(--pb-space-3);
+  margin: 0;
+  white-space: pre-wrap;
+  word-break: break-word;
+  max-height: 300px;
+  overflow-y: auto;
+  line-height: 1.5;
+}

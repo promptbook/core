@@ -110,3 +110,71 @@ Focus on:
 - Key concepts or techniques
 - Types of data being analyzed`;
 }
+
+/**
+ * Build a prompt for generating multiple notebook cells from a user description.
+ * Returns JSON array of cells with instructions, detailed, and code for each.
+ */
+export function buildGenerateCellsPrompt(
+  description: string,
+  fileContents?: Record<string, string>,
+  existingCells?: { shortDescription?: string; code?: string }[]
+): string {
+  const sections: string[] = [];
+
+  sections.push(`You are a notebook assistant that generates multiple cells to accomplish a task.
+Given a user's description of what they want to do, generate a sequence of notebook cells.
+
+IMPORTANT RULES:
+1. Each cell should do ONE thing well
+2. Include a mix of code cells and text cells (markdown) for explanation
+3. For code cells: populate instructions (one-line), detailed (pseudocode), and code (Python)
+4. For text cells: use markdown content to explain sections
+5. Use {{name:value}} format for parameters that users might want to change
+6. Reference variables from previous cells using standard Python names
+7. Generate practical, runnable Python code
+8. Include comments in code where helpful
+9. Limit to 3-8 cells unless the task clearly requires more`);
+
+  sections.push(`\n## User Request:\n${description}`);
+
+  // Include file contents if provided
+  if (fileContents && Object.keys(fileContents).length > 0) {
+    sections.push('\n## Referenced Files:');
+    for (const [path, content] of Object.entries(fileContents)) {
+      // Limit file content preview to avoid token bloat
+      const preview = content.length > 2000 ? content.slice(0, 2000) + '\n...(truncated)' : content;
+      sections.push(`\n### ${path}\n\`\`\`\n${preview}\n\`\`\``);
+    }
+  }
+
+  // Include existing cells for context
+  if (existingCells && existingCells.length > 0) {
+    sections.push('\n## Existing Cells (for context):');
+    for (const cell of existingCells.slice(-5)) {
+      const desc = cell.shortDescription || cell.code?.slice(0, 100) || 'Empty';
+      sections.push(`- ${desc}`);
+    }
+  }
+
+  sections.push(`\n## Required Output Format
+
+Return ONLY a JSON array of cell objects. Each cell has this structure:
+
+For CODE cells:
+{"cellType": "code", "instructions": "one-line description", "detailed": "pseudocode", "code": "python code"}
+
+For TEXT cells:
+{"cellType": "text", "content": "markdown content"}
+
+Example output:
+[
+  {"cellType": "text", "content": "# Data Analysis\\n\\nThis notebook loads and analyzes the dataset."},
+  {"cellType": "code", "instructions": "Load data from {{file:data.csv}}", "detailed": "Read CSV file into pandas DataFrame and display first few rows", "code": "import pandas as pd\\n\\ndf = pd.read_csv('data.csv')\\ndf.head()"},
+  {"cellType": "code", "instructions": "Display basic statistics", "detailed": "Show descriptive statistics for numeric columns", "code": "df.describe()"}
+]
+
+Return ONLY the JSON array, no explanation or markdown fences.`);
+
+  return sections.join('\n');
+}

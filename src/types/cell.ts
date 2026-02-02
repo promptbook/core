@@ -61,6 +61,12 @@ export interface CellState {
   streamingContent?: string;  // Accumulated streaming text from AI
   streamingThinking?: string; // AI's thinking/reasoning (if using extended thinking)
 
+  // Last sync thinking process (persists after sync for the Thinking tab)
+  lastSyncThinking?: string;  // Complete thinking from last sync (extended thinking if available)
+  lastSyncResponse?: string;  // Complete raw response from last sync
+  lastSyncTimestamp?: number; // When the last sync completed
+  isThinkingCollapsed?: boolean; // Whether the thinking panel is collapsed
+
   // Background sync state
   isSyncingInBackground?: boolean;
   backgroundSyncError?: string;
@@ -97,6 +103,10 @@ export function createEmptyCell(id: string, cellType: CellType = 'code'): CellSt
     syncStartTime: undefined,
     streamingContent: undefined,
     streamingThinking: undefined,
+    lastSyncThinking: undefined,
+    lastSyncResponse: undefined,
+    lastSyncTimestamp: undefined,
+    isThinkingCollapsed: true,
     isSyncingInBackground: false,
     backgroundSyncError: undefined,
     backgroundSyncStartTime: undefined,

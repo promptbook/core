@@ -1,4 +1,5 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
+import { createPortal } from 'react-dom';
 
 interface GeneratingOverlayProps {
   /** Whether the overlay is visible */
@@ -30,6 +31,8 @@ function formatElapsedTime(ms: number): string {
  */
 export function GeneratingOverlay({ isVisible, startTime, message = 'Generating...', isBackground = false, streamingContent, streamingThinking }: GeneratingOverlayProps) {
   const [elapsed, setElapsed] = useState(0);
+  const [popupPosition, setPopupPosition] = useState<{ top: number; left: number } | null>(null);
+  const overlayRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
     if (!isVisible || !startTime) {
@@ -45,6 +48,20 @@ export function GeneratingOverlay({ isVisible, startTime, message = 'Generating.
     return () => clearInterval(interval);
   }, [isVisible, startTime]);
 
+  // Calculate popup position when streaming content appears
+  useEffect(() => {
+    if (isVisible && (streamingContent || streamingThinking) && overlayRef.current) {
+      const rect = overlayRef.current.getBoundingClientRect();
+      // Position popup below the spinner, centered
+      setPopupPosition({
+        top: rect.top + 80, // Below the spinner area
+        left: rect.left + rect.width / 2 - 250, // Centered (popup is 500px wide)
+      });
+    } else {
+      setPopupPosition(null);
+    }
+  }, [isVisible, streamingContent, streamingThinking]);
+
   if (!isVisible) return null;
 
   const overlayClass = isBackground
@@ -53,31 +70,43 @@ export function GeneratingOverlay({ isVisible, startTime, message = 'Generating.
 
   const hasStreamingContent = streamingContent || streamingThinking;
 
-  return (
-    <div className={overlayClass}>
-      <div className="generating-overlay__content">
-        <div className="generating-overlay__spinner" />
-        <span className="generating-overlay__message">{message}</span>
-        {startTime && elapsed > 0 && (
-          <span className="generating-overlay__time">{formatElapsedTime(elapsed)}</span>
-        )}
-      </div>
-      {hasStreamingContent && (
-        <div className="generating-overlay__streaming">
-          {streamingThinking && (
-            <div className="generating-overlay__thinking">
-              <span className="generating-overlay__label">Thinking...</span>
-              <pre className="generating-overlay__text">{streamingThinking.slice(-500)}</pre>
-            </div>
-          )}
-          {streamingContent && (
-            <div className="generating-overlay__response">
-              <span className="generating-overlay__label">Response:</span>
-              <pre className="generating-overlay__text">{streamingContent.slice(-300)}</pre>
-            </div>
-          )}
+  // Render streaming popup in a portal so it escapes overflow:hidden
+  const streamingPopup = hasStreamingContent && popupPosition && createPortal(
+    <div
+      className="generating-overlay__streaming-popup"
+      style={{
+        top: Math.max(10, popupPosition.top),
+        left: Math.max(10, Math.min(popupPosition.left, window.innerWidth - 520)),
+      }}
+    >
+      {streamingThinking && (
+        <div className="generating-overlay__thinking">
+          <span className="generating-overlay__label">Thinking...</span>
+          <pre className="generating-overlay__text">{streamingThinking.slice(-500)}</pre>
         </div>
       )}
-    </div>
+      {streamingContent && (
+        <div className="generating-overlay__response">
+          <span className="generating-overlay__label">Response:</span>
+          <pre className="generating-overlay__text">{streamingContent.slice(-300)}</pre>
+        </div>
+      )}
+    </div>,
+    document.body
+  );
+
+  return (
+    <>
+      <div ref={overlayRef} className={overlayClass}>
+        <div className="generating-overlay__content">
+          <div className="generating-overlay__spinner" />
+          <span className="generating-overlay__message">{message}</span>
+          {startTime && elapsed > 0 && (
+            <span className="generating-overlay__time">{formatElapsedTime(elapsed)}</span>
+          )}
+        </div>
+      </div>
+      {streamingPopup}
+    </>
   );
 }

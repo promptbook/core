@@ -53,11 +53,17 @@ export function buildOrchestratorPrompt(
 Given a source (what the user edited), generate the other two representations to match.
 
 IMPORTANT RULES:
-1. Preserve any parameters in the format {{name:value}} - copy them exactly
-2. In Instructions and Detailed descriptions ONLY: #variable_name syntax can reference variables from other cells
-3. In Code: use standard Python variable names (NO # prefix - that's a comment in Python!)
-4. Keep the three representations semantically aligned
-5. Code must be valid, runnable Python`);
+1. PARAMETER DETECTION (CRITICAL): Convert ALL explicit numeric values, filenames, and configurable values in Instructions/Detailed to {{name:value}} format:
+   - Numbers: "first 100" → "first {{count:100}}", "multiplied by 5" → "multiplied by {{multiplier:5}}"
+   - Files: "from data.csv" → "from {{file:data.csv}}"
+   - Thresholds: "above 50" → "above {{threshold:50}}"
+   - Dates: "since 2024-01-01" → "since {{start_date:2024-01-01}}"
+   Example: "Generate the first 100 Fibonacci numbers and multiply each by 5" → "Generate the first {{count:100}} Fibonacci numbers and multiply each by {{multiplier:5}}"
+2. Preserve any EXISTING parameters in {{name:value}} format exactly
+3. In Instructions and Detailed ONLY: #variable_name syntax references variables from other cells
+4. In Code: use standard Python variable names (NO # prefix - that's a comment in Python!)
+5. Keep the three representations semantically aligned
+6. Code must be valid, runnable Python - use the ACTUAL values from parameters (e.g., if {{count:100}}, use 100 in code)`);
 
   // Source information
   sections.push(`\n## Sync Request\n`);
@@ -144,8 +150,6 @@ Return ONLY a JSON object with exactly this structure (no markdown code fences, 
  * Parse the orchestrator's JSON response
  */
 export function parseOrchestratorResponse(response: string): AlignedResults {
-  console.log('[SyncOrchestrator] Parsing response, length:', response.length);
-
   // Try to extract JSON from the response (handle markdown code blocks)
   let jsonStr = response;
   const jsonMatch = jsonStr.match(/```(?:json)?\s*([\s\S]*?)```/);
@@ -156,13 +160,11 @@ export function parseOrchestratorResponse(response: string): AlignedResults {
   // Try to extract JSON object
   const objectMatch = jsonStr.match(/\{[\s\S]*\}/);
   if (!objectMatch) {
-    console.error('[SyncOrchestrator] No JSON found in response:', response.substring(0, 500));
     throw new Error('No JSON found in orchestrator response');
   }
 
   try {
     const parsed = JSON.parse(objectMatch[0]);
-    console.log('[SyncOrchestrator] Successfully parsed JSON');
     return {
       instructions: parsed.instructions || '',
       detailed: parsed.detailed || '',
@@ -171,8 +173,6 @@ export function parseOrchestratorResponse(response: string): AlignedResults {
       alignmentChanges: parsed.changes || [],
     };
   } catch (e) {
-    console.error('[SyncOrchestrator] JSON parse error:', e);
-    console.error('[SyncOrchestrator] Attempted to parse:', objectMatch[0].substring(0, 500));
     throw new Error(`Failed to parse orchestrator response: ${e}`);
   }
 }
@@ -184,15 +184,13 @@ export function parseOrchestratorResponse(response: string): AlignedResults {
  */
 export async function* runSyncOrchestrator(
   sourceType: ContentType,
-  sourceContent: string,
-  context: SyncContext,
+  _sourceContent: string,
+  _context: SyncContext,
   _options: SyncOptions = {}
 ): AsyncGenerator<StreamChunk> {
-  console.log('[SyncOrchestrator] Starting orchestration for sourceType:', sourceType);
-  console.log('[SyncOrchestrator] NOTE: This function should be called from Electron aiHandlers.ts');
-
   // This is now a passthrough - the actual implementation is in aiHandlers.ts
   // We keep this for backwards compatibility but it won't work with claude-agent-sdk
+  void sourceType; // unused but kept for API compatibility
   yield { type: 'error', error: 'runSyncOrchestrator should be called from Electron main process' };
 }
 

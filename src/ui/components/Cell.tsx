@@ -4,6 +4,7 @@ import { DescriptionEditor } from './DescriptionEditor';
 import { CodeEditor } from './CodeEditor';
 import { OutputArea, DataFrameCallbacks, ResearchCallbacks } from './OutputArea';
 import { AIAssistancePanel } from './AIAssistancePanel';
+import { ThinkingPanel } from './ThinkingPanel';
 import { useCellResize } from '../hooks/useCellResize';
 import { FileEntry } from './FileAutocomplete';
 import type { KernelSymbol } from './SymbolAutocomplete';
@@ -18,6 +19,8 @@ interface AIAssistanceProps {
 
 interface CellProps {
   cell: CellState;
+  /** 1-based index of the cell in the notebook */
+  cellIndex: number;
   onUpdate: (cellId: string, updates: Partial<CellState>) => void;
   onRun: (cellId: string) => void;
   onSync: (cellId: string) => void;
@@ -92,7 +95,7 @@ const ExpandIcon = () => (
   </svg>
 );
 
-export function Cell({ cell, onUpdate, onRun, onSync, isActive, onFocus, listFiles, getSymbols, preloadedSymbols, aiAssistance, dataframeCallbacks, researchCallbacks }: CellProps) {
+export function Cell({ cell, cellIndex, onUpdate, onRun, onSync, isActive, onFocus, listFiles, getSymbols, preloadedSymbols, aiAssistance, dataframeCallbacks, researchCallbacks }: CellProps) {
   const [activeTab, setActiveTab] = useState<CodeCellTab>(cell.lastEditedTab || 'short');
   const [showAiPanel, setShowAiPanel] = useState(false);
   const cellRef = useRef<HTMLDivElement>(null);
@@ -133,11 +136,19 @@ export function Cell({ cell, onUpdate, onRun, onSync, isActive, onFocus, listFil
         <div className={`cell-output ${cell.isOutputCollapsed ? 'cell-output--collapsed' : ''}`}>
           <div className="cell-output-header" onClick={toggleOutputCollapse}>
             <span className="cell-output-header__icon">{cell.isOutputCollapsed ? <ExpandIcon /> : <CollapseIcon />}</span>
-            <span className="cell-output-header__label">Output {cell.executionCount ? `[${cell.executionCount}]` : ''}</span>
+            <span className="cell-output-header__label">Output [{cellIndex}]</span>
             {cell.isOutputCollapsed && <span className="cell-output-header__preview">{cell.outputs[0]?.content.slice(0, 50)}...</span>}
           </div>
           {!cell.isOutputCollapsed && <OutputArea outputs={cell.outputs} dataframeCallbacks={dataframeCallbacks} code={cell.code} description={cell.shortDescription} researchCallbacks={researchCallbacks} />}
         </div>
+      )}
+      {cell.lastSyncThinking && (
+        <ThinkingPanel
+          thinking={cell.lastSyncThinking}
+          timestamp={cell.lastSyncTimestamp}
+          isCollapsed={cell.isThinkingCollapsed}
+          onToggleCollapse={() => onUpdate(cell.id, { isThinkingCollapsed: !cell.isThinkingCollapsed })}
+        />
       )}
     </div>
   );

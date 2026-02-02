@@ -9,6 +9,7 @@ export {
   buildSuggestNextStepsPrompt,
   buildDebugErrorPrompt,
   buildExtractKeywordsPrompt,
+  buildGenerateCellsPrompt,
 } from './researchPrompts';
 
 // Agents and skills modules use Node.js fs/path - only import in Node.js environment
