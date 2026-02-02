@@ -54,8 +54,10 @@ Given a source (what the user edited), generate the other two representations to
 
 IMPORTANT RULES:
 1. Preserve any parameters in the format {{name:value}} - copy them exactly
-2. Preserve any symbol references like #variable_name
-3. Keep the three representations semantically aligned`);
+2. In Instructions and Detailed descriptions ONLY: #variable_name syntax can reference variables from other cells
+3. In Code: use standard Python variable names (NO # prefix - that's a comment in Python!)
+4. Keep the three representations semantically aligned
+5. Code must be valid, runnable Python`);
 
   // Source information
   sections.push(`\n## Sync Request\n`);
