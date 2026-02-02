@@ -332,6 +332,22 @@ function CellContent({ activeTab, cell, contentHeight, onShortChange, onPseudoCh
                 <span className="cell-sync-overlay__spinner" />
                 <span>Generating code...</span>
               </div>
+              {(cell.streamingContent || cell.streamingThinking) && (
+                <div className="cell-sync-overlay__streaming">
+                  {cell.streamingThinking && (
+                    <div className="cell-sync-overlay__thinking">
+                      <span className="cell-sync-overlay__thinking-label">Thinking...</span>
+                      <pre className="cell-sync-overlay__thinking-text">{cell.streamingThinking.slice(-500)}</pre>
+                    </div>
+                  )}
+                  {cell.streamingContent && (
+                    <div className="cell-sync-overlay__response">
+                      <span className="cell-sync-overlay__response-label">Generating:</span>
+                      <pre className="cell-sync-overlay__response-text">{cell.streamingContent.slice(-300)}</pre>
+                    </div>
+                  )}
+                </div>
+              )}
             </div>
           )}
           <div className={showAiPanel ? 'cell-code-editor-section' : ''}>

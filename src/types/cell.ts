@@ -57,6 +57,10 @@ export interface CellState {
   // Sync timing
   syncStartTime?: number;  // Timestamp when sync started (for showing elapsed time)
 
+  // Streaming content from AI (for displaying during sync)
+  streamingContent?: string;  // Accumulated streaming text from AI
+  streamingThinking?: string; // AI's thinking/reasoning (if using extended thinking)
+
   // Background sync state
   isSyncingInBackground?: boolean;
   backgroundSyncError?: string;
@@ -91,6 +95,8 @@ export function createEmptyCell(id: string, cellType: CellType = 'code'): CellSt
     isInputCollapsed: false,
     isOutputCollapsed: false,
     syncStartTime: undefined,
+    streamingContent: undefined,
+    streamingThinking: undefined,
     isSyncingInBackground: false,
     backgroundSyncError: undefined,
     backgroundSyncStartTime: undefined,
