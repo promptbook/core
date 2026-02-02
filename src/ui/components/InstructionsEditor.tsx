@@ -88,10 +88,15 @@ export function InstructionsEditor({ instructions, onChange, onParameterUpdate, 
   const handleParameterSubmit = (paramId: string) => {
     const param = parsed.params.find((p) => p.id === paramId);
     if (param && editValue !== param.value) {
-      const newText = updateParameterInText(parsed.originalText, param.name, param.value, editValue);
-      const updatedParams = parsed.params.map((p) => p.id === paramId ? { ...p, value: editValue } : p);
-      if (onParameterChange) onParameterChange(param.name, param.value, editValue);
-      (onParameterUpdate || onChange)({ text: newText, parameters: updatedParams });
+      if (onParameterChange) {
+        // Parameter change is handled by parent (updates all tabs without triggering LLM)
+        onParameterChange(param.name, param.value, editValue);
+      } else {
+        // Fallback: update locally if no parameter handler
+        const newText = updateParameterInText(parsed.originalText, param.name, param.value, editValue);
+        const updatedParams = parsed.params.map((p) => p.id === paramId ? { ...p, value: editValue } : p);
+        (onParameterUpdate || onChange)({ text: newText, parameters: updatedParams });
+      }
     }
     setEditingParamId(null);
   };

@@ -90,9 +90,14 @@ export function DescriptionEditor({ content, onChange, onParameterChange, placeh
   const handleParameterSubmit = (paramId: string) => {
     const param = parsed.params.find((p) => p.id === paramId);
     if (param && editValue !== param.value) {
-      const newText = updateParameterInText(parsed.originalText, param.name, param.value, editValue);
-      if (onParameterChange) onParameterChange(param.name, param.value, editValue);
-      onChange(newText);
+      if (onParameterChange) {
+        // Parameter change is handled by parent (updates all tabs without triggering LLM)
+        onParameterChange(param.name, param.value, editValue);
+      } else {
+        // Fallback: update text directly if no parameter handler
+        const newText = updateParameterInText(parsed.originalText, param.name, param.value, editValue);
+        onChange(newText);
+      }
     }
     setEditingParamId(null);
   };
